@@ -1,4 +1,12 @@
-import Groq from "@/lib/groq-client";
+import Groq from "groq-sdk";
+
+if (!process.env.GROQ_ROADMAP_KEY) {
+  throw new Error("GROQ_ROADMAP_KEY is not defined in environment variables");
+}
+
+const roadmapGroqClient = new Groq({
+  apiKey: process.env.GROQ_ROADMAP_KEY,
+});
 
 interface RoadmapGenerationInput {
   role: string;
@@ -92,8 +100,6 @@ async function generateRoadmapWithAI(
   durationMonths: number,
   skillGaps: { missing: string[] }
 ): Promise<RoadmapPhase[]> {
-  const groq = new Groq();
-
   const prompt = `
 You are a learning system architect. Generate a detailed roadmap for a student transitioning to: ${role}
 
@@ -120,7 +126,7 @@ For each layer, provide 2-3 modules with:
 Format as JSON array of phases with modules. NO MARKDOWN, PURE JSON ONLY.
 `;
 
-  const message = await groq.messages.create({
+  const message = await roadmapGroqClient.messages.create({
     model: "llama3-70b-8192",
     max_tokens: 2000,
     messages: [

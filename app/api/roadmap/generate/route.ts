@@ -1,10 +1,102 @@
-import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getAuthSession, unauthorized, success, serverError, badRequest } from '@/lib/api-auth'
+// app/api/roadmap/generate/route.ts
+// Generate personalized roadmap based on role, skills, and duration
 
-// Fallback roadmap templates for when AI fails
-const FALLBACK_TEMPLATES: Record<string, any> = {
-  'Data Engineer': {
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { generateRoadmap } from "@/lib/ai/roadmap-agent";
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const body = await request.json();
+    const { role, userSkills, durationMonths } = body;
+
+    // Validate input
+    if (!role || !userSkills || !Array.isArray(userSkills) || !durationMonths) {
+      return NextResponse.json(
+        { error: "Missing or invalid required fields: role, userSkills (array), durationMonths" },
+        { status: 400 }
+      );
+    }
+
+    if (![1, 2, 3, 6, 12].includes(durationMonths)) {
+      return NextResponse.json(
+        { error: "Invalid duration. Must be 1, 2, 3, 6, or 12 months" },
+        { status: 400 }
+      );
+    }
+
+    // Generate roadmap using AI
+    const roadmapData = await generateRoadmap({
+      role,
+      userSkills,
+      durationMonths,
+    });
+
+    // Store roadmap in database
+    const roadmap = await prisma.roadmap.upsert({
+      where: { userId: user.id },
+      update: {
+        role,
+        userSkills,
+        durationMonths,
+        roadmapData: roadmapData.roadmap,
+        totalDuration: roadmapData.totalDuration,
+        intensityLevel: roadmapData.intensityLevel,
+        reasoning: roadmapData.reasoning,
+        completionPercentage: 0,
+        updatedAt: new Date(),
+      },
+      create: {
+        userId: user.id,
+        role,
+        userSkills,
+        durationMonths,
+        roadmapData: roadmapData.roadmap,
+        totalDuration: roadmapData.totalDuration,
+        intensityLevel: roadmapData.intensityLevel,
+        reasoning: roadmapData.reasoning,
+        completionPercentage: 0,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Roadmap generated successfully",
+        roadmapId: roadmap.id,
+        roadmap: roadmapData.roadmap,
+        totalDuration: roadmapData.totalDuration,
+        intensityLevel: roadmapData.intensityLevel,
+        reasoning: roadmapData.reasoning,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Roadmap generation error:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to generate roadmap",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+}
     estimatedCompletionMonths: 5,
     readinessScore: 0,
     nodes: [
