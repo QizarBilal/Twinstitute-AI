@@ -1,0 +1,741 @@
+// Prisma schema for Twinstitute AI — Complete Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ─── AUTH MODELS ────────────────────────────────────────────────────────────
+
+model User {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  email                String    @unique
+  passwordHash         String?
+  fullName             String
+  accountType          String    @default("learner") // learner | faculty | institution
+  organizationName     String?
+  emailVerified        Boolean   @default(false)
+  isVerified           Boolean   @default(false)
+  verificationOTP      String?
+  otpExpiry            DateTime?
+  resetTokenHash       String?
+  resetExpiry          DateTime?
+  // DirectionProfile: JSON string containing {cognitiveProfile, skills, selectedDomain, selectedPath, recommendedRoles, validatedSkills, domainHistory, confidenceScore, conversationHistory, timestamps}
+  directionProfile     String?
+  selectedDomain       String?   // Domain selection
+  selectedRole         String?   // Role selection aligned with domain
+  capabilityScore      Float     @default(0) // Current overall capability (0-100)
+  currentLevel         String    @default("foundation") // foundation | building | advancing | expert
+  failedLoginAttempts  Int       @default(0)
+  lockedUntil          DateTime?
+  lastLoginAt          DateTime?
+  avatarUrl            String?
+
+  // ─── PROFILE FIELDS (PRODUCTION) ───────────────────────────────────────
+  mobile               String?
+  college              String?
+  degree               String?
+  stream               String?
+  joinYear             Int?
+  gradYear             Int?
+  street               String?
+  city                 String?
+  state                String?
+  pincode              String?
+
+  // ─── PORTFOLIO PUBLISHING ──────────────────────────────────────────
+  portfolioPublished   Boolean   @default(false)
+  portfolioToken       String?   @unique
+  portfolioPublishedAt DateTime?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  accounts             Account[]
+  sessions             Session[]
+  capabilityTwin       CapabilityTwin?
+  skillGenome          SkillGenome?
+  labSubmissions       LabSubmission[]
+  capabilityCredits    CapabilityCredit[]
+  simulationRuns       SimulationRun[]
+  strategySignals      StrategySignal[]
+  proofArtifacts       ProofArtifact[]
+  interviewEvaluations InterviewEvaluation[]
+  mentorSessions       MentorSession[]
+  milestones           Milestone[]
+  cohortMemberships    CohortMember[]
+  institutionMembership InstitutionMember?
+  orientationSession   OrientationSession?
+
+  @@index([resetTokenHash])
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+model OTPAttempt {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique
+  count     Int      @default(0)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LoginAttempt {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique
+  count     Int      @default(0)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── CAPABILITY TWIN ENGINE ──────────────────────────────────────────────────
+
+model CapabilityTwin {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String   @unique @db.ObjectId
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Core capability scores (0-100)
+  overallScore          Float    @default(0)
+  executionReliability  Float    @default(0)
+  learningSpeed         Float    @default(0)
+  problemSolvingDepth   Float    @default(0)
+  consistency           Float    @default(0)
+  designReasoning       Float    @default(0)
+  abstractionLevel      Float    @default(0)
+  burnoutRisk           Float    @default(0)
+  improvementSlope      Float    @default(0)
+  innovationIndex       Float    @default(0)
+
+  // Growth tracking
+  currentStage          String   @default("foundation") // foundation | building | advancing | expert
+  targetRole            String?
+  targetDomain          String?
+  formationVelocity     Float    @default(0)
+  readinessScore        Float    @default(0)
+
+  // Historical snapshots (JSON array)
+  scoreHistory          String   @default("[]")
+  weeklyReports         String   @default("[]")
+
+  // Status
+  lastUpdated           DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// ─── SKILL GENOME ────────────────────────────────────────────────────────────
+
+model SkillGenome {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @unique @db.ObjectId
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Skill nodes (JSON array of SkillNode objects)
+  nodes         String   @default("[]")
+  // Skill edges/connections (JSON array of {from, to, strength})
+  edges         String   @default("[]")
+  // Weak clusters detected
+  weakClusters  String   @default("[]")
+  // Bridge skills identified
+  bridgeSkills  String   @default("[]")
+  // Compounding skills
+  compoundingSkills String @default("[]")
+
+  coreStrength  Float    @default(0)
+  breadthScore  Float    @default(0)
+  depthScore    Float    @default(0)
+
+  lastAnalyzed  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ─── CAPABILITY LABS ─────────────────────────────────────────────────────────
+
+model LabTask {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  description     String
+  taskType        String   // coding | debugging | system_design | integration | optimization | mini_project
+  difficulty      Int      // 1-10
+  domain          String
+  skills          String   @default("[]") // JSON array
+  timeEstimateMin Int      // minutes
+  instructions    String
+  testCases       String   @default("[]") // JSON array
+  evaluationRubric String  @default("{}")
+  creditReward    Int      @default(10)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  submissions     LabSubmission[]
+  @@index([taskType])
+  @@index([domain])
+}
+
+model LabSubmission {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId          String   @db.ObjectId
+  task            LabTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  // Submission data
+  submittedCode   String?
+  submittedAnswer String?
+  approach        String?  // Student's explanation of their approach
+  timeSpentMin    Int      @default(0)
+  attemptNumber   Int      @default(1)
+
+  // Evaluation results
+  status          String   @default("pending") // pending | evaluated | passed | failed
+  scoreTotal      Float    @default(0)
+  scoreBreakdown  String   @default("{}") // JSON
+  executionTrace  String?  // captured execution trace
+  reasoningLog    String?
+  feedback        String?
+  creditsAwarded  Int      @default(0)
+
+  submittedAt     DateTime @default(now())
+  evaluatedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  evaluation      LabEvaluation?
+  @@index([userId])
+  @@index([taskId])
+}
+
+model LabEvaluation {
+  id                String       @id @default(auto()) @map("_id") @db.ObjectId
+  submissionId      String       @unique @db.ObjectId
+  submission        LabSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  // Agent evaluation scores
+  correctnessScore  Float        @default(0)
+  codeQualityScore  Float        @default(0)
+  efficiencyScore   Float        @default(0)
+  creativityScore   Float        @default(0)
+  clarityScore      Float        @default(0)
+  overallScore      Float        @default(0)
+
+  // AI mentor feedback
+  technicalMentorFeedback  String?
+  strategyMentorFeedback   String?
+  riskMentorFeedback       String?
+  evaluatorReport          String?
+
+  // Insights
+  strengthsIdentified String   @default("[]")
+  gapsIdentified      String   @default("[]")
+  nextStepsRecommended String  @default("[]")
+
+  evaluatedAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ─── CAPABILITY CREDITS ───────────────────────────────────────────────────────
+
+model CapabilityCredit {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  creditType      String   // execution | design | reliability | innovation | problem_solving | consistency
+  amount          Int
+  source          String   // lab_submission | milestone | mentor_review | consistency_streak
+  sourceId        String?
+  description     String
+
+  // Running totals per type (snapshot)
+  totalExecution     Int   @default(0)
+  totalDesign        Int   @default(0)
+  totalReliability   Int   @default(0)
+  totalInnovation    Int   @default(0)
+  totalProblemSolving Int  @default(0)
+  totalConsistency   Int   @default(0)
+  grandTotal         Int   @default(0)
+
+  awardedAt       DateTime @default(now())
+  createdAt       DateTime @default(now())
+  @@index([userId])
+  @@index([creditType])
+}
+
+// ─── OUTCOME SIMULATION ───────────────────────────────────────────────────────
+
+model SimulationRun {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  simulationType  String   // path_selection | depth_vs_breadth | timeline | career_switch
+  inputParams     String   @default("{}") // JSON params
+  selectedPath    String?
+
+  // Simulation results
+  oneYearProjection  String @default("{}") // JSON
+  threeYearProjection String @default("{}") // JSON
+  riskCurve          String @default("[]") // JSON array
+  stabilityScore     Float  @default(0)
+  outcomeProbability Float  @default(0)
+  recommendedPath    String?
+  keyInsights        String @default("[]") // JSON array
+
+  status          String   @default("running") // running | completed | failed
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId])
+}
+
+// ─── STRATEGY SIGNALS ─────────────────────────────────────────────────────────
+
+model StrategySignal {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // CRITICAL: Store final domain selection decision
+  domainSelected  String   // FINAL domain from all orientation data
+  confidenceScore Float    // 0-100 confidence in this domain selection
+  
+  signalType      String   // deepen | switch_path | publish_project | build_portfolio | attempt_interview | change_strategy
+  urgency         String   @default("medium") // low | medium | high | critical
+  title           String
+  reasoning       String
+  agentConsensus  String   @default("{}") // JSON — which agents voted for what
+  actionItems     String   @default("[]") // JSON array
+  isAcknowledged  Boolean  @default(false)
+  isActedUpon     Boolean  @default(false)
+
+  generatedAt     DateTime @default(now())
+  acknowledgedAt  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId])
+}
+
+// ─── PROOF ARTIFACTS ──────────────────────────────────────────────────────────
+
+model ProofArtifact {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  artifactType    String   // execution_trace | reasoning_log | design_decision | solution_transcript | architecture_justification | project_proof
+  title           String
+  description     String
+  content         String   // Full proof content
+  skills          String   @default("[]") // JSON — skills demonstrated
+  labSubmissionId String?  @db.ObjectId
+  projectId       String?
+
+  // Recruiter view data
+  recruiterSummary String?
+  capabilityLevel  String?
+  isPublic         Boolean @default(false)
+  shareToken       String? @unique
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId])
+}
+
+// ─── INTERVIEW EVALUATIONS ────────────────────────────────────────────────────
+
+model InterviewEvaluation {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Interview details
+  question        String   // The interview question asked
+  role            String   // Target role for this interview
+  domain          String?  // Domain/expertise area
+
+  // Audio & transcript
+  audioUrl        String   // S3/storage URL of the audio file
+  audioFileSize   Int      @default(0) // bytes
+  duration        Int      @default(0) // seconds
+
+  // Speech-to-text results
+  transcript      String   // Full transcription of the answer
+  transcriptionModel String? @default("whisper")
+
+  // AI Evaluation results
+  score           Float    @default(0) // 0-100
+  strengths       String   @default("[]") // JSON array
+  weaknesses      String   @default("[]") // JSON array
+  suggestions     String   @default("[]") // JSON array
+  feedback        String?  // Detailed feedback
+
+  // Detailed scoring breakdown
+  technicalDepth  Float    @default(0) // 0-100
+  clarity         Float    @default(0) // 0-100
+  structure       Float    @default(0) // 0-100
+  confidence      Float    @default(0) // 0-100
+  completeness    Float    @default(0) // 0-100
+
+  // System integration
+  proofArtifactId String?  @unique @db.ObjectId // Link to proof artifact
+  impactOnTwin    String   @default("{}")  // JSON — what metrics were affected
+  creditsAwarded  Int      @default(0)
+
+  // Status
+  status          String   @default("evaluated") // processing | evaluated | failed
+  evaluationModel String   @default("llama-3.3-70b") // Which model evaluated this
+  evaluatedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([role])
+  @@index([domain])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ─── MENTOR SESSIONS ──────────────────────────────────────────────────────────
+
+model MentorSession {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sessionType     String   // technical | strategy | risk | evaluation | panel_debate
+  agentRoles      String   @default("[]") // JSON — which agents participated
+  userQuery       String
+  sessionContext  String   @default("{}") // JSON
+  debateLog       String   @default("[]") // JSON — agent debate transcript
+  consensusReport String?
+  actionableOutput String?
+
+  durationMin     Int      @default(0)
+  isCompleted     Boolean  @default(false)
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId])
+}
+
+// ─── MILESTONES ───────────────────────────────────────────────────────────────
+
+model Milestone {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  milestoneType   String   // formation | lab_completion | credit_threshold | readiness | project | interview_ready
+  title           String
+  description     String
+  targetValue     Float
+  currentValue    Float    @default(0)
+  isCompleted     Boolean  @default(false)
+  creditsAwarded  Int      @default(0)
+
+  semesterId      String?  @db.ObjectId
+  semester        Semester? @relation(fields: [semesterId], references: [id])
+
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId])
+}
+
+// ─── VIRTUAL SEMESTERS ────────────────────────────────────────────────────────
+
+model Semester {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  description     String?
+  domain          String
+  targetRole      String
+  durationWeeks   Int
+  labCycles       Int      @default(4)
+  evaluationRounds Int     @default(2)
+  isActive        Boolean  @default(true)
+
+  milestones      Milestone[]
+  cohorts         Cohort[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ─── INSTITUTION & COHORT ─────────────────────────────────────────────────────
+
+model Institution {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  domain          String   @unique
+  logoUrl         String?
+  adminEmail      String   @unique
+  isVerified      Boolean  @default(false)
+  planType        String   @default("starter") // starter | professional | enterprise
+  maxStudents     Int      @default(100)
+
+  members         InstitutionMember[]
+  cohorts         Cohort[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model InstitutionMember {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String      @unique @db.ObjectId
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institutionId   String      @db.ObjectId
+  institution     Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  role            String      @default("faculty") // admin | faculty | coordinator
+  createdAt       DateTime    @default(now())
+  @@index([institutionId])
+}
+
+model Cohort {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  institutionId   String       @db.ObjectId
+  institution     Institution  @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  semesterId      String?      @db.ObjectId
+  semester        Semester?    @relation(fields: [semesterId], references: [id])
+  targetDomain    String
+  targetRole      String?
+  startDate       DateTime
+  endDate         DateTime?
+  isActive        Boolean      @default(true)
+
+  members         CohortMember[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  @@index([institutionId])
+}
+
+model CohortMember {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cohortId        String   @db.ObjectId
+  cohort          Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  joinedAt        DateTime @default(now())
+  @@unique([userId, cohortId])
+  @@index([cohortId])
+}
+// ─── ROADMAP ENGINE ───────────────────────────────────────────────────────────
+
+model RoadmapNode {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  nodeId             String   // e.g., "sql_foundation"
+  title              String
+  description        String?
+  type               String   // foundation | skill | system | project | evaluation
+  difficulty         String   // easy | intermediate | advanced | expert
+  estimatedHours     Int
+  skillsGained       String[] // Array of skill names
+  why                String?  // AI reasoning for inclusion
+  impactExecution    Int      // 0-10 impact score
+  impactProblemSolving Int    // 0-10 impact score
+  dependencies       String[] // Array of dependent nodeIds
+  
+  roadmapId          String   @db.ObjectId
+  roadmap            Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  
+  @@unique([roadmapId, nodeId])
+  @@index([roadmapId])
+}
+
+model Roadmap {
+  id                           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                       String   @db.ObjectId
+  role                         String
+  domain                       String
+  estimatedCompletionMonths    Float
+  readinessScore               Int      // 0-100
+  
+  nodes                        RoadmapNode[]
+  progress                     RoadmapProgress[]
+  
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+  
+  @@unique([userId, role, domain])
+  @@index([userId])
+}
+
+model RoadmapProgress {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String   @db.ObjectId
+  nodeId             String   // Reference to RoadmapNode.nodeId
+  roadmapId          String   @db.ObjectId
+  roadmap            Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  
+  status             String   // locked | available | in_progress | completed
+  startedAt          DateTime?
+  completedAt        DateTime?
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  @@unique([userId, roadmapId, nodeId])
+  @@index([roadmapId])
+  @@index([userId])
+}
+
+// ─── ORIENTATION SYSTEM ───────────────────────────────────────────────────────
+
+model OrientationSession {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @unique @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Workflow tracking
+  workflowType      String   // clear-goal | confused | exploring
+  currentStage      String   @default("started") // started | in-progress | completed
+  isCompleted       Boolean  @default(false)
+
+  // User context
+  userSkills        String   @default("[]") // JSON array of skill names
+  skillLevels       String   @default("{}") // JSON { skillName: "basic"|"intermediate"|"advanced" }
+  interestScores    String   @default("{}") // JSON { coding: 0-10, creativity: 0-10, systems: 0-10 }
+  detectedTraits    String   @default("[]") // JSON array of CognitiveType: ["Builder", "Systems"]
+
+  // Multi-select exploration
+  selectedRoleIds   String   @default("[]") // JSON array of role IDs being explored
+  favoriteRoleIds   String   @default("[]") // JSON array of favorite roles
+
+  // Final decision
+  finalRoleId       String?  // Selected role after orientation
+  finalDomain       String?  // Domain of selected role
+  confidenceScore   Float    @default(0) // 0-100 confidence in final decision
+
+  // AI explanations cache
+  aiExplanations    String   @default("{}") // JSON cache of AI-generated explanations by roleId
+
+  // Conversation history
+  conversationLog   String   @default("[]") // JSON array of message exchanges
+  messageCount      Int      @default(0)
+
+  // Metadata
+  startedAt         DateTime @default(now())
+  completedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  decisions         OrientationDecision[]
+
+  @@index([isCompleted])
+}
+
+model OrientationDecision {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId           String   @db.ObjectId
+  session             OrientationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId              String   @db.ObjectId
+
+  // Final decision details
+  selectedRole        String   // Role name
+  selectedDomain      String   // Domain name
+  workflowUsed        String   // Which workflow led to this decision
+  
+  // Context
+  userSkills          String   @default("[]") // JSON array of skills user had
+  skillLevels         String   @default("{}") // JSON skill levels
+  detectedTraits      String   @default("[]") // JSON cognitive types detected
+  matchScore          Float    @default(0) // 0-100 skill match score
+  gapAnalysis         String   @default("[]") // JSON array of missing skills
+
+  // Decision reasoning
+  whyThisRole         String?  // AI-generated explanation of why this role
+  alternativeRoles    String   @default("[]") // JSON array of roles considered
+  userNotes           String?  // User's notes on their decision
+
+  // Activation tracking
+  isPathActivated     Boolean  @default(false) // Whether roadmap was generated
+  isLabsActivated     Boolean  @default(false) // Whether labs were initialized
+  activatedAt         DateTime?
+
+  decisionTimestamp   DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([selectedDomain])
+}
+
+model OrientationRoleExplanation {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  roleId            String   // ID from role-intelligence system
+  roleName          String
+
+  // Cached explanations from GROQ
+  explanation       String   // Role explanation (2-3 paragraphs)
+  growthPath        String   // Career growth explanation
+  skillGaps         String   @default("[]") // JSON array of common skill gaps
+
+  // Metadata
+  createdAt         DateTime @default(now()) // Generated timestamp
+  updatedAt         DateTime @updatedAt
+  expiresAt         DateTime? // Cache expiration
+
+  @@unique([roleId])
+}
+
+model OrientationComparison {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  comparison        String   // For comparing [roleId1]-[roleId2]-[roleId3]
+
+  // Cached comparison
+  comparisonText    String   // AI-generated comparison explanation
+  keyDifferences    String   @default("[]") // JSON array of key differences
+
+  // Metadata
+  generatedAt       DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  expiresAt         DateTime? // Cache expiration
+
+  @@unique([comparison])
+}
