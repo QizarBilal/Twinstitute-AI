@@ -1,63 +1,107 @@
-import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getAuthSession, unauthorized, success, serverError, badRequest } from '@/lib/api-auth'
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { generateRoadmap } from "@/lib/ai/roadmap-agent";
 
-// GET /api/roadmap - Get user's roadmaps
-export async function GET(req: NextRequest) {
+// GET /api/roadmap - Fetch user's roadmap based on their selected role
+export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession()
-    if (!session?.user?.id) return unauthorized()
+    const session = await getServerSession(authOptions);
 
-    const { searchParams } = new URL(req.url)
-    const role = searchParams.get('role')
-    const domain = searchParams.get('domain')
-
-    // Build where clause
-    const where: Record<string, any> = { userId: session.user.id }
-    if (role) where.role = role
-    if (domain) where.domain = domain
-
-    const roadmaps = await (prisma as any).roadmap.findMany({
-      where,
-      include: {
-        nodes: true,
-        progress: {
-          where: { userId: session.user.id },
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
-    })
-
-    if (roadmaps.length === 0) {
-      return success({
-        roadmaps: [],
-        message: 'No roadmaps found. Use POST to /api/roadmap/generate to create one.',
-      })
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Enrich roadmaps with node progress status
-    const enrichedRoadmaps = (roadmaps as any[]).map((roadmap: any) => {
-      const progressMap = new Map(
-        roadmap.progress.map((p: any) => [p.nodeId, p.status])
-      )
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: {
+        id: true,
+        fullName: true,
+        selectedRole: true,
+        selectedDomain: true,
+      },
+    });
 
-      const enrichedNodes = roadmap.nodes.map((node: any) => ({
-        ...node,
-        userStatus: progressMap.get(node.nodeId) || 'locked',
-      }))
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
-      return {
-        ...roadmap,
-        nodes: enrichedNodes,
-      }
-    })
+    // If user hasn't selected a role yet
+    if (!user.selectedRole) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "No role selected yet",
+          roadmap: null,
+          userRole: null,
+        },
+        { status: 200 }
+      );
+    }
 
-    return success({
-      roadmaps: enrichedRoadmaps,
-      count: enrichedRoadmaps.length,
-    })
+    // Check if roadmap already exists for this user
+    let roadmap = await prisma.roadmap.findUnique({
+      where: { userId: user.id },
+    });
+
+    // If no roadmap exists, generate one
+    if (!roadmap) {
+      // Get user's current skills (from directionProfile or default to empty)
+      const userSkills: string[] = [];
+
+      // Generate roadmap
+      const roadmapData = await generateRoadmap({
+        role: user.selectedRole,
+        userSkills,
+        durationMonths: 6, // Default to 6 months
+      });
+
+      // Store in database
+      roadmap = await prisma.roadmap.create({
+        data: {
+          userId: user.id,
+          role: user.selectedRole,
+          userSkills,
+          durationMonths: 6,
+          roadmapData: roadmapData.roadmap,
+          totalDuration: roadmapData.totalDuration,
+          intensityLevel: roadmapData.intensityLevel,
+          reasoning: roadmapData.reasoning,
+          completionPercentage: 0,
+        },
+      });
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Roadmap loaded successfully",
+        roadmap: {
+          id: roadmap.id,
+          role: roadmap.role,
+          userRole: user.selectedRole,
+          domain: user.selectedDomain,
+          durationMonths: roadmap.durationMonths,
+          roadmapData: roadmap.roadmapData,
+          totalDuration: roadmap.totalDuration,
+          intensityLevel: roadmap.intensityLevel,
+          reasoning: roadmap.reasoning,
+          completionPercentage: roadmap.completionPercentage,
+          createdAt: roadmap.createdAt,
+          updatedAt: roadmap.updatedAt,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Roadmap Fetch Error:', error)
-    return serverError()
+    console.error("Roadmap fetch error:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to fetch or generate roadmap",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
 }
