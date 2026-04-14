@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if roadmap already exists for this user
-    let roadmap = await prisma.roadmap.findUnique({
+    let roadmap = await prisma.roadmap.findFirst({
       where: { userId: user.id },
     });
 
@@ -62,12 +62,15 @@ export async function GET(request: NextRequest) {
         data: {
           userId: user.id,
           role: user.selectedRole,
-          userSkills,
+          domain: user.selectedDomain || "General",
           durationMonths: 6,
-          roadmapData: roadmapData.roadmap,
+          userSkills: userSkills,
+          roadmapData: JSON.stringify(roadmapData.roadmap),
           totalDuration: roadmapData.totalDuration,
           intensityLevel: roadmapData.intensityLevel,
           reasoning: roadmapData.reasoning,
+          estimatedCompletionMonths: 6,
+          readinessScore: 0,
           completionPercentage: 0,
         },
       });
@@ -81,9 +84,9 @@ export async function GET(request: NextRequest) {
           id: roadmap.id,
           role: roadmap.role,
           userRole: user.selectedRole,
-          domain: user.selectedDomain,
+          domain: roadmap.domain,
           durationMonths: roadmap.durationMonths,
-          roadmapData: roadmap.roadmapData,
+          roadmapData: roadmap.roadmapData ? JSON.parse(roadmap.roadmapData) : [],
           totalDuration: roadmap.totalDuration,
           intensityLevel: roadmap.intensityLevel,
           reasoning: roadmap.reasoning,

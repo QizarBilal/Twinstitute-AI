@@ -50,28 +50,37 @@ export async function POST(request: NextRequest) {
 
     // Store roadmap in database
     const roadmap = await prisma.roadmap.upsert({
-      where: { userId: user.id },
+      where: {
+        userId_role: {
+          userId: user.id,
+          role: role,
+        },
+      },
       update: {
-        role,
         userSkills,
         durationMonths,
-        roadmapData: roadmapData.roadmap,
+        roadmapData: JSON.stringify(roadmapData.roadmap),
         totalDuration: roadmapData.totalDuration,
         intensityLevel: roadmapData.intensityLevel,
         reasoning: roadmapData.reasoning,
         completionPercentage: 0,
+        estimatedCompletionMonths: durationMonths,
+        readinessScore: 0,
         updatedAt: new Date(),
       },
       create: {
         userId: user.id,
         role,
+        domain: "General",
         userSkills,
         durationMonths,
-        roadmapData: roadmapData.roadmap,
+        roadmapData: JSON.stringify(roadmapData.roadmap),
         totalDuration: roadmapData.totalDuration,
         intensityLevel: roadmapData.intensityLevel,
         reasoning: roadmapData.reasoning,
         completionPercentage: 0,
+        estimatedCompletionMonths: durationMonths,
+        readinessScore: 0,
       },
     });
 
@@ -96,16 +105,8 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+  }
 }
-    estimatedCompletionMonths: 5,
-    readinessScore: 0,
-    nodes: [
-      {
-        id: 'sql_foundation',
-        title: 'SQL Fundamentals',
-        type: 'foundation',
-        difficulty: 'easy',
-        estimatedHours: 20,
         skillsGained: ['SQL', 'Data Querying'],
         why: 'Core requirement for querying and managing data',
         impact: { execution: 5, problemSolving: 4 },

@@ -591,9 +591,18 @@ model Roadmap {
   id                           String   @id @default(auto()) @map("_id") @db.ObjectId
   userId                       String   @db.ObjectId
   role                         String
-  domain                       String
-  estimatedCompletionMonths    Float
-  readinessScore               Int      // 0-100
+  domain                       String?
+  estimatedCompletionMonths    Float?
+  readinessScore               Int?     // 0-100
+  
+  // AI-generated roadmap data
+  roadmapData                  String?  // JSON structure of phases and modules
+  totalDuration                String?  // e.g., "6 months"
+  intensityLevel               String?  // e.g., "Moderate - Balanced Compression"
+  reasoning                    String?  // Why this roadmap was generated
+  durationMonths               Int?     // Selected duration in months
+  userSkills                   String[] @default([]) // User's current skills
+  completionPercentage         Float    @default(0)  // Progress tracking
   
   nodes                        RoadmapNode[]
   progress                     RoadmapProgress[]
@@ -601,7 +610,7 @@ model Roadmap {
   createdAt                    DateTime @default(now())
   updatedAt                    DateTime @updatedAt
   
-  @@unique([userId, role, domain])
+  @@unique([userId, role])
   @@index([userId])
 }
 
