@@ -37,21 +37,150 @@ interface GeneratedRoadmap {
 }
 
 const ROLE_DATABASE: Record<string, { requiredSkills: string[]; optionalSkills: string[] }> = {
+  // ⭐ TIER 1: Core Tech Roles (High Quality, Most Common)
   "Full Stack Developer": {
     requiredSkills: ["JavaScript", "React", "Node.js", "Database Design", "REST APIs", "HTML/CSS"],
     optionalSkills: ["TypeScript", "Docker", "AWS", "GraphQL"],
+  },
+  "Backend Engineer": {
+    requiredSkills: ["Node.js", "Python", "Database Design", "API Design", "System Architecture"],
+    optionalSkills: ["Microservices", "Message Queues", "Caching"],
+  },
+  "Frontend Engineer": {
+    requiredSkills: ["JavaScript", "React", "CSS", "HTML", "State Management"],
+    optionalSkills: ["TypeScript", "Web Performance", "Accessibility"],
   },
   "Data Scientist": {
     requiredSkills: ["Python", "Statistics", "Machine Learning", "SQL", "Data Visualization"],
     optionalSkills: ["Deep Learning", "Big Data", "MLOps"],
   },
+  "Data Engineer": {
+    requiredSkills: ["SQL", "Python", "ETL", "Data Warehousing", "Apache Spark"],
+    optionalSkills: ["Kafka", "Airflow", "Cloud Data Platforms"],
+  },
   "DevOps Engineer": {
     requiredSkills: ["Linux", "Docker", "Kubernetes", "CI/CD", "Cloud Platforms"],
-    optionalSkills: ["Terraform", "Monitoring", "Security"],
+    optionalSkills: ["Terraform", "Monitoring", "Infrastructure Security"],
   },
-  "Mobile Developer": {
-    requiredSkills: ["React Native or Flutter", "JavaScript/Dart", "Mobile UI/UX", "APIs", "State Management"],
-    optionalSkills: ["Native iOS/Android", "Performance Optimization"],
+  "Mobile Developer (React Native)": {
+    requiredSkills: ["React Native", "JavaScript", "Mobile UI/UX", "Native APIs"],
+    optionalSkills: ["TypeScript", "Firebase", "Mobile Performance"],
+  },
+  "iOS Developer": {
+    requiredSkills: ["Swift", "iOS APIs", "Mobile UI", "Xcode"],
+    optionalSkills: ["SwiftUI", "Core Data", "ARKit"],
+  },
+  "Android Developer": {
+    requiredSkills: ["Kotlin", "Android APIs", "Material Design", "Android Studio"],
+    optionalSkills: ["Jetpack", "Compose", "NDK"],
+  },
+  "Cloud Architect (AWS)": {
+    requiredSkills: ["AWS Services", "System Design", "Networking", "Security"],
+    optionalSkills: ["Infrastructure as Code", "Cost Optimization", "Multi-region"],
+  },
+  "ML Engineer": {
+    requiredSkills: ["Python", "TensorFlow", "Model Training", "Data Preprocessing"],
+    optionalSkills: ["PyTorch", "MLOps", "Model Deployment"],
+  },
+  "QA Engineer": {
+    requiredSkills: ["Testing Frameworks", "Automation", "SQL", "API Testing"],
+    optionalSkills: ["Performance Testing", "CI/CD Integration", "Test Architecture"],
+  },
+  "Solutions Architect": {
+    requiredSkills: ["System Design", "Scalability", "Technology Stack Selection", "Documentation"],
+    optionalSkills: ["Cloud Platforms", "Microservices", "Enterprise Patterns"],
+  },
+  "Database Administrator": {
+    requiredSkills: ["SQL", "Database Optimization", "Backup/Recovery", "Monitoring"],
+    optionalSkills: ["NoSQL", "Replication", "High Availability"],
+  },
+  "Security Engineer": {
+    requiredSkills: ["Security Protocols", "Network Security", "Encryption", "Vulnerability Assessment"],
+    optionalSkills: ["Penetration Testing", "SIEM", "Compliance"],
+  },
+  
+  // ⭐ TIER 2: Specialized Roles (High Quality, Growing)
+  "Product Manager": {
+    requiredSkills: ["Product Strategy", "User Research", "Roadmapping", "Analytics"],
+    optionalSkills: ["Technical Knowledge", "User Psychology", "A/B Testing"],
+  },
+  "Technical Program Manager": {
+    requiredSkills: ["Project Management", "Technical Understanding", "Stakeholder Management"],
+    optionalSkills: ["Agile", "Risk Management", "Documentation"],
+  },
+  "Data Analyst": {
+    requiredSkills: ["SQL", "Excel", "Data Visualization", "Analytics Tools"],
+    optionalSkills: ["Python", "Business Intelligence", "Dashboard Creation"],
+  },
+  "AI/ML Researcher": {
+    requiredSkills: ["Mathematics", "Python", "Research Skills", "Paper Implementation"],
+    optionalSkills: ["PyTorch", "TensorFlow", "Academic Publishing"],
+  },
+  "Blockchain Developer": {
+    requiredSkills: ["Smart Contracts", "Solidity", "Cryptography", "Web3"],
+    optionalSkills: ["DeFi", "Layer 2 Solutions", "Security Auditing"],
+  },
+  "Game Developer": {
+    requiredSkills: ["C#", "Unity", "Game Design", "3D Graphics"],
+    optionalSkills: ["Unreal Engine", "Physics Engine", "Networking"],
+  },
+  "Site Reliability Engineer": {
+    requiredSkills: ["Linux", "Monitoring", "Incident Response", "Automation"],
+    optionalSkills: ["Kubernetes", "Terraform", "Performance Tuning"],
+  },
+  "Platform Engineer": {
+    requiredSkills: ["Infrastructure", "Developer Tool Design", "Automation", "Kubernetes"],
+    optionalSkills: ["GitOps", "Internal Developer Platforms", "Cost Optimization"],
+  },
+  "Systems Engineer": {
+    requiredSkills: ["System Design", "Performance", "Scalability", "Architecture"],
+    optionalSkills: ["Distributed Systems", "Concurrency", "Resource Management"],
+  },
+  "Engineering Manager": {
+    requiredSkills: ["Team Leadership", "Technical Knowledge", "Communication", "Performance Management"],
+    optionalSkills: ["Mentoring", "Strategic Planning", "Conflict Resolution"],
+  },
+  
+  // ⭐ TIER 3: Emerging & Specialized (High Quality, Niche)
+  "LLM Engineer": {
+    requiredSkills: ["Python", "Transformers", "Fine-tuning", "Prompt Engineering"],
+    optionalSkills: ["Hugging Face", "Langchain", "Vector Databases"],
+  },
+  "Computer Vision Engineer": {
+    requiredSkills: ["Python", "OpenCV", "CNN", "Image Processing"],
+    optionalSkills: ["Deep Learning", "Real-time Processing", "3D Vision"],
+  },
+  "Embedded Systems Engineer": {
+    requiredSkills: ["C/C++", "Microcontrollers", "Hardware", "Real-time Systems"],
+    optionalSkills: ["RTOS", "IoT", "Firmware"],
+  },
+  "Infrastructure Engineer": {
+    requiredSkills: ["System Administration", "Network Configuration", "Monitoring"],
+    optionalSkills: ["IaC", "Virtualization", "Cloud Platforms"],
+  },
+  "Business Intelligence Developer": {
+    requiredSkills: ["SQL", "BI Tools", "Data Modeling", "Dashboard Design"],
+    optionalSkills: ["ETL", "Python", "Advanced Analytics"],
+  },
+  "GraphQL Developer": {
+    requiredSkills: ["GraphQL", "API Design", "JavaScript", "Database Design"],
+    optionalSkills: ["Federation", "Subscriptions", "Performance Optimization"],
+  },
+  "Performance Engineer": {
+    requiredSkills: ["Performance Optimization", "Profiling", "System Tuning", "Benchmarking"],
+    optionalSkills: ["Database Optimization", "Caching", "CDN"],
+  },
+  "Accessibility Specialist": {
+    requiredSkills: ["Web Accessibility", "WCAG Standards", "Testing", "JavaScript"],
+    optionalSkills: ["Assistive Technologies", "UX Design", "Testing Tools"],
+  },
+  "Tech Writer": {
+    requiredSkills: ["Technical Communication", "Documentation", "API Docs", "Markdown"],
+    optionalSkills: ["Developer Experience", "Video Documentation", "Localization"],
+  },
+  "Growth Engineer": {
+    requiredSkills: ["Data Analysis", "Experimentation", "JavaScript", "Analytics"],
+    optionalSkills: ["Product Sense", "User Psychology", "A/B Testing"],
   },
 };
 
@@ -63,21 +192,50 @@ const LAYER_STRUCTURE = {
 };
 
 function getIntensityLevel(durationMonths: number): string {
-  if (durationMonths >= 12) return "Low - Deep Learning with Spaced Repetition";
-  if (durationMonths >= 6) return "Moderate - Balanced Compression";
-  if (durationMonths === 3) return "High - Daily Tasks and Intensity";
-  return "Extreme - Critical Concepts Only + Heavy Execution";
+  if (durationMonths >= 12) {
+    return "Low (12 months) - Deep learning, spaced repetition, 4-5 hrs/week";
+  }
+  if (durationMonths === 6) {
+    return "Moderate (6 months) - Balanced pace, 10-15 hrs/week";
+  }
+  if (durationMonths === 3) {
+    return "High (3 months) - Fast-paced, 20-25 hrs/week";
+  }
+  if (durationMonths === 2) {
+    return "Very High (2 months) - Intensive, 30-40 hrs/week";
+  }
+  return "Extreme (1 month) - Boot camp style, 40-50 hrs/week, daily execution";
 }
 
+/**
+ * CRITICAL: Time adaptation formula
+ * ✅ CORRECT: Same modules, different intensity
+ * ❌ WRONG: Remove modules for shorter timelines
+ * 
+ * Formula: As duration decreases, intensity increases, not content
+ */
 function calculateModuleEstimates(durationMonths: number): Record<string, number> {
-  const baseHours = 200;
-  const compressionFactor = 12 / durationMonths;
+  const baseHours = 300; // Total hours to reach full capability
+  
+  // Time compression factor: how aggressive to compress
+  // Never goes BELOW 1x for any duration
+  const compressionFactors: Record<number, number> = {
+    1: 6,   // 1 month = 6x speed (50 hours/week = intense)
+    2: 4,   // 2 months = 4x speed (37 hours/week = very intense)
+    3: 3,   // 3 months = 3x speed (25 hours/week = high)
+    6: 1.5, // 6 months = 1.5x speed (12 hours/week = moderate)
+    12: 1,  // 12 months = 1x speed (6 hours/week = comfortable)
+  };
+
+  const factor = compressionFactors[durationMonths] || 1;
+  const weeklyHours = baseHours / (durationMonths * 4) * factor;
 
   return {
-    foundation: Math.ceil((baseHours * 0.2) / compressionFactor),
-    coreSkills: Math.ceil((baseHours * 0.35) / compressionFactor),
-    application: Math.ceil((baseHours * 0.25) / compressionFactor),
-    mastery: Math.ceil((baseHours * 0.2) / compressionFactor),
+    foundation: Math.ceil((baseHours * 0.2) / factor),     // Still all 60 hours
+    coreSkills: Math.ceil((baseHours * 0.35) / factor),   // Still all 105 hours
+    application: Math.ceil((baseHours * 0.25) / factor),  // Still all 75 hours
+    mastery: Math.ceil((baseHours * 0.2) / factor),       // Still all 60 hours
+    weeklyHoursRequired: Math.ceil(weeklyHours),
   };
 }
 
@@ -100,35 +258,73 @@ async function generateRoadmapWithAI(
   durationMonths: number,
   skillGaps: { missing: string[] }
 ): Promise<RoadmapPhase[]> {
+  const estimates = calculateModuleEstimates(durationMonths);
+  const intensityLevel = getIntensityLevel(durationMonths);
+
   const prompt = `
-You are a learning system architect. Generate a detailed roadmap for a student transitioning to: ${role}
+You are a learning system architect. Generate a detailed roadmap for: ${role}
 
-Current Skills: ${userSkills.join(", ")}
-Missing Skills: ${skillGaps.missing.join(", ")}
-Timeline: ${durationMonths} months
-Intensity Level: ${getIntensityLevel(durationMonths)}
+⚠️ CRITICAL CONSTRAINT:
+- Generate EXACTLY 4 layers with 2-3 modules EACH
+- Do NOT remove modules for shorter timelines
+- For shorter timelines: increase daily hours required, not remove content
+- All 4 layers MUST be present regardless of duration
 
-Create a structured roadmap with 4 mandatory layers:
+Timeline: ${durationMonths} months (${intensityLevel})
+Current Skills: ${userSkills.join(", ") || "None"}
+Missing Skills: ${skillGaps.missing.slice(0, 5).join(", ")}
 
-1. FOUNDATION LAYER: Programming basics, core logic, environment setup
-2. CORE SKILL LAYER: Main technologies, frameworks, tools for ${role}
-3. APPLICATION LAYER: Real-world projects, integrations
-4. MASTERY LAYER: Optimization, system design, interview readiness
+LAYER 1: FOUNDATION (${estimates.foundation} hours)
+- Environment setup
+- Core concepts
+- Pre-requisite knowledge
 
-For each layer, provide 2-3 modules with:
+LAYER 2: CORE SKILLS (${estimates.coreSkills} hours)
+- Main technologies for ${role}
+- Frameworks & tools
+- Best practices
+
+LAYER 3: APPLICATION (${estimates.application} hours)
+- Real-world projects
+- Integration patterns
+- Production techniques
+
+LAYER 4: MASTERY (${estimates.mastery} hours)
+- System design
+- Performance optimization
+- Interview preparation
+
+For each module:
 - Title
-- Description (1-2 sentences)
-- Skills covered (list)
-- Key tasks (3-4 items)
-- Difficulty level (Beginner/Intermediate/Advanced)
-- Estimated hours (adjusted for ${durationMonths} month timeline)
+- Brief description
+- Skills covered (comma-separated)
+- 2-3 key tasks
+- Difficulty (Beginner/Intermediate/Advanced)
+- Estimated hours (from list above)
 
-Format as JSON array of phases with modules. NO MARKDOWN, PURE JSON ONLY.
+Return ONLY valid JSON as array of phases:
+[
+  {
+    "phase": "Foundation Layer",
+    "duration": "2 weeks",
+    "modules": [
+      {
+        "title": "...",
+        "description": "...",
+        "skills": ["skill1", "skill2"],
+        "tasks": ["task1", "task2"],
+        "difficulty": "Beginner",
+        "estimatedHours": ${estimates.foundation}
+      }
+    ]
+  }
+]
 `;
 
   const message = await roadmapGroqClient.messages.create({
     model: "llama3-70b-8192",
-    max_tokens: 2000,
+    max_tokens: 2500,
+    temperature: 0.5,
     messages: [
       {
         role: "user",
