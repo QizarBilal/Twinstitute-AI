@@ -398,11 +398,32 @@ export async function GET(req: NextRequest) {
     }
 
     // Return comprehensive capability twin data
+    const labsCompleted = labSubmissions?.filter(s => s.status === 'passed' || s.status === 'completed').length || 0
+    const creditsEarned = labSubmissions?.reduce((sum, s) => sum + (s.creditsAwarded || 0), 0) || 0
+
     return success({
       // Overall Capability Score
+      overallScore: capabilityScore,  // For Dashboard compatibility
       capabilityScore,
       capabilityLevel,
       percentToNextLevel: capabilityScore % 20,
+
+      // Dashboard metrics
+      readinessScore: capabilityTwin?.readinessScore || 0,
+      labsCompleted,
+      creditsEarned,
+      currentStage: capabilityLevel,
+      formationVelocity: capabilityTwin?.formationVelocity || 0,
+      targetRole: user.selectedRole || capabilityTwin?.targetRole || 'Not selected',
+      targetDomain: user.selectedDomain || capabilityTwin?.targetDomain || 'Not selected',
+      
+      // Core capability breakdown
+      executionReliability: capabilityTwin?.executionReliability || 0,
+      learningSpeed: capabilityTwin?.learningSpeed || 0,
+      problemSolvingDepth: capabilityTwin?.problemSolvingDepth || 0,
+      consistency: capabilityTwin?.consistency || 0,
+      designReasoning: capabilityTwin?.designReasoning || 0,
+      abstractionLevel: capabilityTwin?.abstractionLevel || 0,
 
       // Component Scores - use CapabilityTwin breakdown if available
       components: capabilityTwin && capabilityTwin.overallScore > 0 ? {

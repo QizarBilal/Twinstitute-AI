@@ -117,6 +117,8 @@ export async function GET() {
 
     // Weekly progress
     const weeklyProgress: WeeklyProgress[] = []
+    let totalTimeSpent = 0
+
     for (let w = 0; w < totalWeeks; w++) {
       const weekStart = new Date(startDate)
       weekStart.setDate(weekStart.getDate() + w * 7)
@@ -129,7 +131,8 @@ export async function GET() {
       })
 
       const completedTasks = weekSubmissions.filter(sub => sub.status === 'passed' || sub.status === 'completed').length
-      const timeSpent = 0 // Time tracking not available in LabSubmission model
+      const weekTimeSpent = weekSubmissions.reduce((sum, sub) => sum + (sub.timeSpentMin || 0), 0)
+      totalTimeSpent += weekTimeSpent
 
       // Count module data in the week
       const modulesStarted = weekSubmissions.length > 0 ? 1 : 0 // Simplified: any submission counts as starting work
@@ -139,7 +142,7 @@ export async function GET() {
         weekStart: weekStart.toISOString().split('T')[0],
         weekEnd: weekEnd.toISOString().split('T')[0],
         tasksCompleted: completedTasks,
-        timeSpent,
+        timeSpent: weekTimeSpent,
         modulesStarted,
         modulesCompleted,
         progressPercentage: weekSubmissions.length > 0 ? Math.round((completedTasks / weekSubmissions.length) * 100) : 0
@@ -156,7 +159,6 @@ export async function GET() {
 
     // Calculate metrics
     const totalTasksCompleted = user.labSubmissions.filter(s => s.status === 'passed' || s.status === 'completed').length
-    const totalTimeSpent = 0 // Time tracking not available in LabSubmission model
 
     // Learning velocity: tasks per week based on elapsed time (not total roadmap weeks)
     const now = new Date()

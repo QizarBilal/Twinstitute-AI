@@ -142,6 +142,14 @@ async function seedDemoData() {
         skills: ['Caching', 'Load Balancing', 'Scaling']
       },
       {
+        nodeId: 'microservices',
+        title: 'Microservices Architecture',
+        type: 'system',
+        difficulty: 'advanced',
+        hours: 40,
+        skills: ['Service Discovery', 'API Gateway', 'Deployment']
+      },
+      {
         nodeId: 'authentication',
         title: 'Security & Authentication',
         type: 'skill',
@@ -150,12 +158,28 @@ async function seedDemoData() {
         skills: ['Authentication', 'JWT', 'OAuth']
       },
       {
-        nodeId: 'full-stack',
-        title: 'Full Stack Integration',
+        nodeId: 'backend-project',
+        title: 'Backend System Project',
         type: 'project',
         difficulty: 'advanced',
-        hours: 40,
-        skills: ['React', 'TypeScript', 'Integration Testing']
+        hours: 50,
+        skills: ['System Design', 'API Implementation', 'Testing']
+      },
+      {
+        nodeId: 'frontend-advanced',
+        title: 'Advanced Frontend Patterns',
+        type: 'skill',
+        difficulty: 'advanced',
+        hours: 35,
+        skills: ['React Hooks', 'State Management', 'Performance']
+      },
+      {
+        nodeId: 'capstone',
+        title: 'Full Stack Capstone Project',
+        type: 'project',
+        difficulty: 'expert',
+        hours: 60,
+        skills: ['Full Stack Integration', 'DevOps', 'Deployment']
       }
     ]
 

@@ -95,7 +95,7 @@ export async function GET() {
             recommendation: 'Maintain consistent progress to stay on track',
             metric: 'Progress vs Expected',
             currentValue: progressPercent,
-            targetValue: expectedProgress,
+            targetValue: Math.max(expectedProgress, 70),
             priority: 3
           })
           healthScore -= 10
@@ -109,7 +109,7 @@ export async function GET() {
             recommendation: 'Keep up this consistent momentum',
             metric: 'Progress vs Expected',
             currentValue: progressPercent,
-            targetValue: expectedProgress,
+            targetValue: Math.min(70, Math.round(expectedProgress * 1.1)),
             priority: 1
           })
         }
@@ -249,7 +249,7 @@ export async function GET() {
         recommendation: 'Maintain this strong completion pattern',
         metric: 'Task Completion Rate',
         currentValue: completionRate,
-        targetValue: 85,
+        targetValue: Math.max(100, completionRate + 5),
         priority: 1
       })
     }
