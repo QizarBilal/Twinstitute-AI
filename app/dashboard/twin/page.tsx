@@ -118,6 +118,7 @@ export default function TwinPage() {
                         Growth
                     </button>
                 </div>
+                </div>
             </motion.div>
 
             {/* OVERVIEW TAB */}
