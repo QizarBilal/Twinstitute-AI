@@ -83,8 +83,8 @@ export default function TwinPage() {
             >
                 <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">🧬 Capability Twin</h1>
-                    <p className="text-gray-400 text-sm mt-1">Your real-time capability profile & growth tracking</p>
+                    <h1 className="text-3xl font-bold text-white">Your Profile</h1>
+                    <p className="text-slate-400 text-sm mt-1">Real-time capability assessment & growth tracking</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -321,7 +321,7 @@ export default function TwinPage() {
                 >
                     {/* Core Skills */}
                     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                        <h3 className="text-lg font-semibold text-blue-400 mb-4">🎯 Core Skills ({capabilityData.skillsAnalysis.coreSkills.length})</h3>
+                        <h3 className="text-lg font-semibold text-blue-400 mb-4">Core Skills ({capabilityData.skillsAnalysis.coreSkills.length})</h3>
                         <div className="grid grid-cols-2 gap-4">
                             {capabilityData.skillsAnalysis.coreSkills.map((skill: any, idx: number) => (
                                 <div key={idx} className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
@@ -443,14 +443,14 @@ export default function TwinPage() {
                             <p className="text-2xl font-bold text-cyan-400">{capabilityData.growthMetrics.targetRole}</p>
                         </div>
                         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                            <h3 className="text-sm font-semibold text-gray-300 mb-4">🎯 Target Domain</h3>
+                            <h3 className="text-sm font-semibold text-slate-300 mb-4">Target Domain</h3>
                             <p className="text-2xl font-bold text-purple-400">{capabilityData.growthMetrics.targetDomain}</p>
                         </div>
                     </div>
 
                     {/* Recent Activity */}
                     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                        <h3 className="text-lg font-semibold text-white mb-4">📊 Recent Task Attempts</h3>
+                        <h3 className="text-lg font-semibold text-white mb-4">Recent Task Attempts</h3>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
                             {capabilityData.taskAnalysis.recentTasks.length > 0 ? (
                                 capabilityData.taskAnalysis.recentTasks.map((task: any, idx: number) => (

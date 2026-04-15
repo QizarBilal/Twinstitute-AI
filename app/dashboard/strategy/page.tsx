@@ -112,10 +112,10 @@ export default function StrategyPage() {
         className="bg-gradient-to-r from-slate-900/50 via-slate-800/30 to-slate-900/50 border border-slate-700/50 rounded-2xl p-8 backdrop-blur-xl"
       >
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-3xl font-bold text-white">🎯 Strategy Signals</h1>
+          <h1 className="text-3xl font-bold text-white">Strategic Insights</h1>
           <span className="text-4xl">{getHealthIcon(data.overallHealth)}</span>
         </div>
-        <p className="text-slate-400">AI-free rules-based insights for your learning journey</p>
+        <p className="text-slate-400">Personalized guidance based on your learning data</p>
         <div className="mt-4">
           <p className="text-sm text-slate-300 mb-1">Overall Health Status</p>
           <p className="text-2xl font-bold text-white capitalize">{data.overallHealth}</p>

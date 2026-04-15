@@ -78,7 +78,7 @@ export default function MilestonesPage() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-r from-slate-900/50 via-slate-800/30 to-slate-900/50 border border-slate-700/50 rounded-2xl p-8 backdrop-blur-xl"
       >
-        <h1 className="text-3xl font-bold text-white mb-2">📊 Milestone Tracking</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Your Milestones</h1>
         <p className="text-gray-400">Track your roadmap modules and learning progress</p>
       </motion.div>
 
