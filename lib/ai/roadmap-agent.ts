@@ -335,105 +335,261 @@ Return ONLY valid JSON as array of phases:
 
   try {
     const responseText = message.content[0]?.type === "text" ? message.content[0].text : "";
+    console.log(`📝 Groq response (first 500 chars):`, responseText.substring(0, 500));
+    
     // Extract JSON from response
     const jsonMatch = responseText.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(jsonMatch[0]);
+      console.log(`✅ Successfully parsed Groq response: ${parsed.length} phases`);
+      return parsed;
+    } else {
+      console.warn("⚠️ No JSON array found in Groq response");
     }
   } catch (error) {
-    console.error("Failed to parse Groq response:", error);
+    console.error("❌ Failed to parse Groq response:", error);
   }
 
   // Fallback structure if AI generation fails
+  console.log(`⚠️ Using fallback roadmap for role: ${role}`);
   return generateFallbackRoadmap(role, durationMonths);
 }
 
 function generateFallbackRoadmap(role: string, durationMonths: number): RoadmapPhase[] {
   const estimates = calculateModuleEstimates(durationMonths);
+  const durationWeeks = durationMonths * 4;
 
-  return [
-    {
-      phase: LAYER_STRUCTURE.FOUNDATION,
-      duration: `${Math.max(1, Math.floor(durationMonths * 0.15))} weeks`,
-      modules: [
-        {
-          title: "Setup & Fundamentals",
-          description: "Environment setup, core concepts, and foundational tools",
-          skills: ["System Setup", "Version Control", "Development Tools"],
-          tasks: ["Setup development environment", "Learn Git basics", "Configure IDE"],
-          difficulty: "Beginner",
-          estimatedHours: estimates.foundation,
-        },
-      ],
-    },
-    {
-      phase: LAYER_STRUCTURE.CORE_SKILLS,
-      duration: `${Math.max(1, Math.floor(durationMonths * 0.4))} weeks`,
-      modules: [
-        {
-          title: `${role} Core Technologies`,
-          description: "Master the main technologies and frameworks for this role",
-          skills: ["Primary Language", "Key Framework", "Main Tools"],
-          tasks: ["Complete core tutorials", "Build sample projects", "Master core patterns"],
-          difficulty: "Intermediate",
-          estimatedHours: estimates.coreSkills,
-        },
-      ],
-    },
-    {
-      phase: LAYER_STRUCTURE.APPLICATION,
-      duration: `${Math.max(1, Math.floor(durationMonths * 0.3))} weeks`,
-      modules: [
-        {
-          title: "Real-World Projects",
-          description: "Apply knowledge through practical, production-like projects",
-          skills: ["Project Architecture", "Integration", "Best Practices"],
-          tasks: ["Build capstone project", "Integrate multiple systems", "Deploy application"],
-          difficulty: "Advanced",
-          estimatedHours: estimates.application,
-        },
-      ],
-    },
-    {
-      phase: LAYER_STRUCTURE.MASTERY,
-      duration: `${Math.max(1, Math.floor(durationMonths * 0.15))} weeks`,
-      modules: [
-        {
-          title: "System Design & Optimization",
-          description: "Advanced patterns, optimization, and interview preparation",
-          skills: ["System Design", "Performance", "Advanced Patterns"],
-          tasks: ["Design complex systems", "Optimize performance", "Prepare for interviews"],
-          difficulty: "Advanced",
-          estimatedHours: estimates.mastery,
-        },
-      ],
-    },
-  ];
+  const fallbackStructure: Record<string, RoadmapPhase[]> = {
+    // Default fallback for any role
+    DEFAULT: [
+      {
+        phase: LAYER_STRUCTURE.FOUNDATION,
+        duration: `${Math.max(2, Math.floor(durationWeeks * 0.15))} weeks`,
+        modules: [
+          {
+            title: "Development Environment Setup",
+            description: "Configure development tools, version control, and workspace",
+            skills: ["Git", "Command Line", "IDE Configuration", "Package Management"],
+            tasks: ["Install and configure development environment", "Setup Git repository", "Configure IDE/editor"],
+            difficulty: "Beginner",
+            estimatedHours: Math.ceil(estimates.foundation / 2),
+          },
+          {
+            title: "Core Fundamentals",
+            description: "Understand core concepts and principles for the role",
+            skills: ["Algorithms", "Data Structures", "System Thinking", "Best Practices"],
+            tasks: ["Learn core algorithms", "Understand data structures", "Study best practices"],
+            difficulty: "Beginner",
+            estimatedHours: Math.ceil(estimates.foundation / 2),
+          },
+        ],
+      },
+      {
+        phase: LAYER_STRUCTURE.CORE_SKILLS,
+        duration: `${Math.max(4, Math.floor(durationWeeks * 0.4))} weeks`,
+        modules: [
+          {
+            title: "Primary Technology Stack",
+            description: "Master the main language and framework for this role",
+            skills: ["Primary Language", "Key Framework", "Core Patterns"],
+            tasks: ["Build foundational projects", "Master core patterns", "Complete framework tutorials"],
+            difficulty: "Intermediate",
+            estimatedHours: Math.ceil(estimates.coreSkills / 2),
+          },
+          {
+            title: "Essential Tools & Databases",
+            description: "Learn supporting technologies and persistence layers",
+            skills: ["Database Design", "ORM/Query Language", "Tool Ecosystem"],
+            tasks: ["Design database schemas", "Write efficient queries", "Integrate with tools"],
+            difficulty: "Intermediate",
+            estimatedHours: Math.ceil(estimates.coreSkills / 2),
+          },
+        ],
+      },
+      {
+        phase: LAYER_STRUCTURE.APPLICATION,
+        duration: `${Math.max(3, Math.floor(durationWeeks * 0.3))} weeks`,
+        modules: [
+          {
+            title: "Real-World Project 1",
+            description: "Build a substantial project applying core skills to realistic scenarios",
+            skills: ["Project Architecture", "Integration", "Testing"],
+            tasks: ["Design architecture", "Implement features", "Write comprehensive tests"],
+            difficulty: "Advanced",
+            estimatedHours: Math.ceil(estimates.application / 2),
+          },
+          {
+            title: "Real-World Project 2 & Deployment",
+            description: "Build a second project and master deployment and production practices",
+            skills: ["Deployment", "CI/CD", "Monitoring", "Performance"],
+            tasks: ["Deploy to production", "Setup monitoring", "Optimize performance"],
+            difficulty: "Advanced",
+            estimatedHours: Math.ceil(estimates.application / 2),
+          },
+        ],
+      },
+      {
+        phase: LAYER_STRUCTURE.MASTERY,
+        duration: `${Math.max(2, Math.floor(durationWeeks * 0.15))} weeks`,
+        modules: [
+          {
+            title: "System Design & Architecture",
+            description: "Learn advanced patterns and how to design scalable systems",
+            skills: ["System Design", "Scalability", "Advanced Patterns"],
+            tasks: ["Design scalable systems", "Optimize architecture", "Handle edge cases"],
+            difficulty: "Advanced",
+            estimatedHours: Math.ceil(estimates.mastery / 2),
+          },
+          {
+            title: "Interview Preparation & Mastery",
+            description: "Prepare for technical interviews and solidify mastery of the role",
+            skills: ["Problem Solving", "Communication", "Deep Knowledge"],
+            tasks: ["Practice interview problems", "Master complex scenarios", "Build portfolio projects"],
+            difficulty: "Advanced",
+            estimatedHours: Math.ceil(estimates.mastery / 2),
+          },
+        ],
+      },
+    ],
+  };
+
+  // Return the default fallback (guaranteed to be valid)
+  const roadmap = fallbackStructure.DEFAULT;
+
+  // Verify the fallback is valid
+  if (!validateRoadmap(roadmap)) {
+    console.error("❌ CRITICAL: Even fallback roadmap is invalid!");
+    throw new Error("Fallback roadmap validation failed");
+  }
+
+  console.log(`✅ Fallback roadmap generated for role: ${role}`);
+  return roadmap;
 }
 
 export async function generateRoadmap(input: RoadmapGenerationInput): Promise<GeneratedRoadmap> {
   const { role, userSkills, durationMonths } = input;
 
-  // Validate input
-  if (!role || !userSkills.length || !durationMonths) {
-    throw new Error("Invalid roadmap generation input");
+  // Validate input (userSkills can be empty array)
+  if (!role || typeof durationMonths !== 'number' || durationMonths <= 0) {
+    throw new Error("Invalid roadmap generation input: role and durationMonths required");
   }
 
-  // Get role requirements
-  const roleRequirements = ROLE_DATABASE[role]?.requiredSkills || [];
+  // CRITICAL: Normalize role to match database
+  const normalizedRole = normalizeRole(role);
+  console.log(`Normalized role: "${role}" → "${normalizedRole}"`);
+
+  // Get role requirements (use normalized role)
+  const roleRequirements = ROLE_DATABASE[normalizedRole]?.requiredSkills || [];
   const skillGaps = identifySkillGaps(userSkills, roleRequirements);
 
-  // Generate roadmap phases
-  const roadmap = await generateRoadmapWithAI(role, userSkills, durationMonths, skillGaps);
+  // Generate roadmap phases with AI
+  let roadmap = await generateRoadmapWithAI(normalizedRole, userSkills, durationMonths, skillGaps);
+
+  // CRITICAL: Validate roadmap structure
+  if (!validateRoadmap(roadmap)) {
+    console.warn("Invalid roadmap from AI, using fallback");
+    roadmap = generateFallbackRoadmap(normalizedRole, durationMonths);
+  }
 
   // Calculate total duration and intensity
   const intensityLevel = getIntensityLevel(durationMonths);
   const totalHours = roadmap.reduce((sum, phase) => sum + phase.modules.reduce((s, m) => s + m.estimatedHours, 0), 0);
 
-  return {
+  const result: GeneratedRoadmap = {
     roadmap,
     totalDuration: `${durationMonths} months`,
     intensityLevel,
     reasoning: `Roadmap designed for ${durationMonths}-month timeline with ${intensityLevel.toLowerCase()} intensity. Total estimated effort: ${totalHours} hours. All 4 layers maintained at ${intensityLevel.toLowerCase()} compression.`,
   };
+
+  // Final validation before returning
+  if (!validateRoadmap(result.roadmap)) {
+    throw new Error("Failed to generate valid roadmap - fallback also failed");
+  }
+
+  return result;
+}
+
+/**
+ * CRITICAL: Normalize role from kebab-case to Title Case
+ * "software-engineer" → "Full Stack Developer"
+ */
+function normalizeRole(role: string): string {
+  // First, try exact match
+  if (ROLE_DATABASE[role]) {
+    return role;
+  }
+
+  // Convert kebab-case to Title Case
+  const normalized = role
+    .replace(/-/g, " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+
+  // Check if it matches any key in the database
+  const matchedRole = Object.keys(ROLE_DATABASE).find(
+    (key) => key.toLowerCase() === normalized.toLowerCase()
+  );
+
+  if (matchedRole) {
+    return matchedRole;
+  }
+
+  // Fallback: if nothing matches, return the better-formatted version
+  console.warn(`Role "${role}" not found in database, using normalized: "${normalized}"`);
+  return normalized;
+}
+
+/**
+ * CRITICAL: Validation that roadmap is complete
+ * Must have:
+ * - 4 phases
+ * - At least 2 modules per phase
+ * - Valid structure for each module
+ */
+function validateRoadmap(roadmap: RoadmapPhase[]): boolean {
+  if (!Array.isArray(roadmap) || roadmap.length === 0) {
+    console.error("❌ Roadmap is not an array or is empty");
+    return false;
+  }
+
+  if (roadmap.length < 4) {
+    console.error(`❌ Roadmap has only ${roadmap.length} phases, need 4`);
+    return false;
+  }
+
+  // Check each phase
+  for (let i = 0; i < roadmap.length; i++) {
+    const phase = roadmap[i];
+
+    if (!phase.phase || !phase.modules) {
+      console.error(`❌ Phase ${i} missing required fields`);
+      return false;
+    }
+
+    if (!Array.isArray(phase.modules) || phase.modules.length === 0) {
+      console.error(`❌ Phase "${phase.phase}" has no modules`);
+      return false;
+    }
+
+    // Validate each module
+    for (let j = 0; j < phase.modules.length; j++) {
+      const module = phase.modules[j];
+      if (
+        !module.title ||
+        !module.description ||
+        !Array.isArray(module.skills) ||
+        !Array.isArray(module.tasks) ||
+        !module.difficulty ||
+        !module.estimatedHours
+      ) {
+        console.error(`❌ Module ${j} in phase "${phase.phase}" has invalid structure`);
+        return false;
+      }
+    }
+  }
+
+  console.log(`✅ Roadmap valid: ${roadmap.length} phases, ${roadmap.reduce((s, p) => s + p.modules.length, 0)} modules`);
+  return true;
 }

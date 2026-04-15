@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Groq } from 'groq-sdk'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null
 
 interface MentorRequest {
     message: string
@@ -12,6 +12,10 @@ interface MentorRequest {
 
 export async function POST(request: NextRequest) {
     try {
+        if (!groq) {
+            throw new Error('GROQ_API_KEY not configured')
+        }
+
         const { message, taskContext, conversationHistory } = (await request.json()) as MentorRequest
 
         const systemPrompt = `You are an expert AI coding mentor at Twinstitute. Your role is to:

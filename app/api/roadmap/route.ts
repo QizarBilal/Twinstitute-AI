@@ -2,9 +2,16 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { generateRoadmap } from "@/lib/ai/roadmap-agent";
+import { generateRoadmap } from "@/lib/ai/roadmap-generator-hybrid";
 
-// GET /api/roadmap - Fetch user's roadmap based on their selected role
+// GET /api/roadmap - Fetch user's roadmap (ROLE-FIRST SYSTEM)
+// ═══════════════════════════════════════════════════════════════════
+// Roadmap structure is ONLY determined by:
+// ✅ Finalized Role
+// ✅ Selected Duration (1,2,3,6,12 months)
+// ❌ User Skills (only used for personalization: userHasSkill flag)
+// ═══════════════════════════════════════════════════════════════════
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -40,40 +47,61 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if roadmap already exists for this user
+    // Check if roadmap already exists for this user+role
     let roadmap = await prisma.roadmap.findFirst({
-      where: { userId: user.id },
+      where: { userId: user.id, role: user.selectedRole },
     });
 
-    // If no roadmap exists, generate one
+    // If no roadmap exists, generate one (ALWAYS 6-month default)
     if (!roadmap) {
-      // Get user's current skills (from directionProfile or default to empty)
-      const userSkills: string[] = [];
+      try {
+        console.log(`📍 [API] Generating roadmap for user: ${user.id}, role: ${user.selectedRole}`);
 
-      // Generate roadmap
-      const roadmapData = await generateRoadmap({
-        role: user.selectedRole,
-        userSkills,
-        durationMonths: 6, // Default to 6 months
-      });
+        // Get user's current skills (empty if not set)
+        const userSkills: string[] = [];
 
-      // Store in database
-      roadmap = await prisma.roadmap.create({
-        data: {
-          userId: user.id,
+        // Generate roadmap using ROLE-FIRST system
+        const roadmapData = await generateRoadmap({
           role: user.selectedRole,
-          domain: user.selectedDomain || "General",
-          durationMonths: 6,
-          userSkills: userSkills,
-          roadmapData: JSON.stringify(roadmapData.roadmap),
-          totalDuration: roadmapData.totalDuration,
-          intensityLevel: roadmapData.intensityLevel,
-          reasoning: roadmapData.reasoning,
-          estimatedCompletionMonths: 6,
-          readinessScore: 0,
-          completionPercentage: 0,
-        },
-      });
+          userSkills,
+          durationMonths: 6, // Default: 6-month balanced pace
+        });
+
+        console.log(`✅ [API] Roadmap generated: ${roadmapData.totalModules} modules`);
+
+        // Store in database
+        roadmap = await prisma.roadmap.create({
+          data: {
+            userId: user.id,
+            role: user.selectedRole,
+            domain: user.selectedDomain || "General",
+            durationMonths: 6,
+            userSkills: userSkills,
+            roadmapData: JSON.stringify(roadmapData.phases),
+            totalDuration: `${roadmapData.durationMonths} months`,
+            intensityLevel: roadmapData.intensity,
+            reasoning: roadmapData.reasoning,
+            estimatedCompletionMonths: 6,
+            readinessScore: 0,
+            completionPercentage: 0,
+          },
+        });
+
+        console.log(`✅ [API] Roadmap saved to DB: ${roadmap.id}`);
+      } catch (generationError) {
+        console.error(`❌ [API] Roadmap generation failed:`, generationError);
+        throw generationError;
+      }
+    }
+
+    // Parse roadmap data
+    let roadmapPhases = [];
+    try {
+      if (roadmap.roadmapData) {
+        roadmapPhases = typeof roadmap.roadmapData === "string" ? JSON.parse(roadmap.roadmapData) : roadmap.roadmapData;
+      }
+    } catch (parseError) {
+      console.error("Failed to parse roadmap data:", parseError);
     }
 
     return NextResponse.json(
@@ -86,7 +114,7 @@ export async function GET(request: NextRequest) {
           userRole: user.selectedRole,
           domain: roadmap.domain,
           durationMonths: roadmap.durationMonths,
-          roadmapData: roadmap.roadmapData ? JSON.parse(roadmap.roadmapData) : [],
+          roadmapData: roadmapPhases,
           totalDuration: roadmap.totalDuration,
           intensityLevel: roadmap.intensityLevel,
           reasoning: roadmap.reasoning,
@@ -98,7 +126,7 @@ export async function GET(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Roadmap fetch error:", error);
+    console.error("❌ [API] Roadmap fetch error:", error);
     return NextResponse.json(
       {
         error: "Failed to fetch or generate roadmap",

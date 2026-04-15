@@ -120,10 +120,6 @@ export const userService = {
             take: 10,
             orderBy: { createdAt: 'desc' },
           },
-          strategySignals: {
-            take: 5,
-            orderBy: { generatedAt: 'desc' },
-          },
         },
       })
 

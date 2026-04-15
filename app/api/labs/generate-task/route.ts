@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Groq } from 'groq-sdk'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null
 
 interface TaskGenerationRequest {
     difficulty: number
@@ -22,6 +22,10 @@ interface GeneratedTask {
 
 export async function POST(request: NextRequest) {
     try {
+        if (!groq) {
+            throw new Error('GROQ_API_KEY not configured')
+        }
+
         const { difficulty, weakAreas } = (await request.json()) as TaskGenerationRequest
 
         const systemPrompt = `You are an AI task generator for Twinstitute Labs. Generate real-world coding tasks.

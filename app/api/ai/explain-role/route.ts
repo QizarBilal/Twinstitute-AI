@@ -15,6 +15,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Role title is required' }, { status: 400 })
     }
 
+    if (!groqClient) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'AI role explanation is unavailable because GROQ_API_KEY is not configured',
+        },
+        { status: 503 }
+      )
+    }
+
     const cleanRoleTitle = roleTitle.trim()
 
     // Use AI to generate comprehensive role information

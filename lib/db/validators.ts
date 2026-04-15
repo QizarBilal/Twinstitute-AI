@@ -45,42 +45,6 @@ export function validateUserData(data: any): ValidationResult {
   return { valid: errors.length === 0, errors }
 }
 
-// ─── STRATEGY SIGNAL VALIDATORS ──────────────────────────────────────────────
-
-export function validateStrategySignal(data: any): ValidationResult {
-  const errors: string[] = []
-
-  if (!data.userId || typeof data.userId !== 'string') {
-    errors.push('StrategySignal.userId is required and must be a string')
-  }
-
-  if (!data.domainSelected || typeof data.domainSelected !== 'string') {
-    errors.push('StrategySignal.domainSelected is CRITICAL and must be a string')
-  }
-
-  if (typeof data.confidenceScore !== 'number') {
-    errors.push('StrategySignal.confidenceScore must be a number (0-100)')
-  }
-
-  if (data.confidenceScore < 0 || data.confidenceScore > 100) {
-    errors.push('StrategySignal.confidenceScore must be between 0 and 100')
-  }
-
-  if (!data.signalType || typeof data.signalType !== 'string') {
-    errors.push('StrategySignal.signalType is required')
-  }
-
-  if (!data.title || typeof data.title !== 'string') {
-    errors.push('StrategySignal.title is required')
-  }
-
-  if (!data.reasoning || typeof data.reasoning !== 'string') {
-    errors.push('StrategySignal.reasoning is required')
-  }
-
-  return { valid: errors.length === 0, errors }
-}
-
 // ─── ROADMAP VALIDATORS ─────────────────────────────────────────────────────
 
 export function validateRoadmap(data: any): ValidationResult {

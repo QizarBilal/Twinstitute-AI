@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, FlaskConical, Cpu, Map, Dna, FileText, FolderKanban,
-  FolderOpen, Users, Layers, Globe, Shield, Bot, CalendarDays, Settings,
+  FolderOpen, Users, Layers, Shield, Bot, CalendarDays, Settings,
   Zap
 } from 'lucide-react'
 
@@ -28,7 +28,6 @@ const navItems: NavItem[] = [
   { id: 'projects',    label: 'Project Lab',            path: '/dashboard/projects',     icon: <FolderOpen size={18} /> },
   { id: 'recruiter',   label: 'Evaluator Simulator',    path: '/dashboard/recruiter',    icon: <Users size={18} /> },
   { id: 'twin',        label: 'Digital Twin',           path: '/dashboard/twin',         icon: <Layers size={18} /> },
-  { id: 'strategy',    label: 'Strategy Console',       path: '/dashboard/strategy',     icon: <Globe size={18} /> },
   { id: 'transcript',  label: 'Capability Transcript',  path: '/dashboard/transcript',   icon: <Shield size={18} /> },
   { id: 'proof',       label: 'Capability Proof',       path: '/dashboard/proof',        icon: <Zap size={18} /> },
   { id: 'mentor',      label: 'Mentor Panel',           path: '/dashboard/mentor',       icon: <Bot size={18} /> },

@@ -1,25 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { COLORS } from '@/lib/design-system'
-
-interface Module {
-  id: string
-  title: string
-  description: string
-  skills: string[]
-  tasks: string[]
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
-  estimatedHours: number
-  userHasSkill: boolean
-}
-
-interface RoadmapPhase {
-  phase: string
-  modules: Module[]
-}
 
 const RoadmapLoadingState = () => (
     <div className="space-y-6 p-6" style={{ backgroundColor: COLORS.background.primary }}>
@@ -35,24 +18,6 @@ const RoadmapLoadingState = () => (
             ))}
         </div>
     </div>
-)
-
-const LoadingOverlay = () => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
-  >
-    <motion.div
-      animate={{ scale: [1, 1.1, 1] }}
-      transition={{ duration: 1.5, repeat: Infinity }}
-      className="flex flex-col items-center gap-4"
-    >
-      <div className="w-12 h-12 rounded-lg border-2 border-cyan-500/30 border-t-cyan-500 animate-spin" />
-      <p className="text-cyan-400 text-sm font-medium">Reconfiguring your training path...</p>
-    </motion.div>
-  </motion.div>
 )
 
 const EmptyRoadmapState = () => (
@@ -72,94 +37,62 @@ const EmptyRoadmapState = () => (
             <p style={{ color: COLORS.text.secondary }} className="mb-6 text-lg">
                 Complete the Orientation to select your career path
             </p>
-            <Link href="/orientation">
-              <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="inline-block px-8 py-4 rounded-lg font-semibold cursor-pointer"
-                  style={{
-                      backgroundColor: COLORS.accent.primary,
-                      color: '#000',
-                  }}
-              >
-                  Complete Orientation
-              </motion.div>
-            </Link>
+            <motion.a
+                href="/orientation"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="inline-block px-8 py-4 rounded-lg font-semibold"
+                style={{
+                    backgroundColor: COLORS.accent.primary,
+                    color: '#000',
+                }}
+            >
+                Complete Orientation
+            </motion.a>
         </motion.div>
     </div>
 )
 
 export default function RoadmapPage() {
     const [roadmapData, setRoadmapData] = useState<any>(null)
-    const [phases, setPhases] = useState<RoadmapPhase[]>([])
     const [loading, setLoading] = useState(true)
-    const [regenerating, setRegenerating] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [duration, setDuration] = useState(6)
-    const [activeModule, setActiveModule] = useState<Module | null>(null)
-
-    const durationOptions = [1, 2, 3, 6, 12]
-
-    const regenerateRoadmap = async (newDuration: number) => {
-        if (!roadmapData?.userRole || newDuration === duration) return
-        try {
-            setRegenerating(true)
-            setError(null)
-            console.log(`🔄 Regenerating roadmap for ${newDuration} months...`)
-            const response = await fetch('/api/roadmap/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    role: roadmapData.userRole,
-                    durationMonths: newDuration,
-                }),
-            })
-            const data = await response.json()
-            console.log('✅ Regenerated response:', data)
-            
-            if (!response.ok) throw new Error(data.error || 'Failed to regenerate')
-            if (data.success && data.roadmap) {
-                // Consistent with GET endpoint structure
-                const roadmapArray = data.roadmap.roadmapData || []
-                const phaseArray = Array.isArray(roadmapArray) ? roadmapArray : []
-                
-                console.log(`✅ Phases loaded: ${phaseArray.length}`)
-                
-                setRoadmapData(data.roadmap)
-                setPhases(phaseArray as RoadmapPhase[])
-                setDuration(newDuration)
-            } else {
-                throw new Error('No roadmap data in response')
-            }
-        } catch (err) {
-            console.error('❌ Regeneration error:', err)
-            setError(err instanceof Error ? err.message : 'Failed to regenerate')
-        } finally {
-            setRegenerating(false)
-        }
-    }
 
     useEffect(() => {
         const fetchRoadmap = async () => {
             try {
                 setLoading(true)
+                console.log('📍 Fetching roadmap...')
                 const response = await fetch('/api/roadmap')
                 const data = await response.json()
-                if (!response.ok) throw new Error(data.error || 'Failed to fetch')
+
+                console.log('📦 API Response:', data)
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to fetch roadmap')
+                }
+
                 if (data.success && data.roadmap) {
-                    const roadmapArray = data.roadmap.roadmapData || []
-                    const phaseArray = Array.isArray(roadmapArray) ? roadmapArray : []
+                    const phases = data.roadmap.roadmapData || []
+                    console.log('✅ Roadmap data valid:', {
+                        phases: Array.isArray(phases) ? phases.length : 0,
+                        phaseStructure: Array.isArray(phases) && phases.length > 0 ? phases[0] : 'N/A',
+                        duration: data.roadmap.durationMonths,
+                        role: data.roadmap.userRole,
+                    })
                     setRoadmapData(data.roadmap)
-                    setPhases(phaseArray as RoadmapPhase[])
-                    setDuration(data.roadmap.durationMonths || 6)
+                } else {
+                    console.warn('⚠️ No roadmap data in response')
+                    setRoadmapData(null)
                 }
             } catch (err) {
-                console.error('❌ Fetch error:', err)
+                console.error('❌ Roadmap fetch error:', err)
                 setError(err instanceof Error ? err.message : 'Unknown error')
             } finally {
                 setLoading(false)
             }
         }
+
         fetchRoadmap()
     }, [])
 
@@ -174,7 +107,18 @@ export default function RoadmapPage() {
             </div>
         )
     }
-    if (!roadmapData || phases.length === 0) return <EmptyRoadmapState />
+    if (!roadmapData) return <EmptyRoadmapState />
+
+    // Parse roadmap data
+    let phases = []
+    if (roadmapData.roadmapData) {
+        try {
+            phases = typeof roadmapData.roadmapData === 'string' ? JSON.parse(roadmapData.roadmapData) : roadmapData.roadmapData
+        } catch (e) {
+            console.error('Failed to parse roadmap data:', e)
+            phases = []
+        }
+    }
 
     return (
         <div className="space-y-6 p-8" style={{ backgroundColor: COLORS.background.primary, minHeight: '100vh' }}>
@@ -190,55 +134,6 @@ export default function RoadmapPage() {
                     Your <span className="font-semibold text-cyan-400">{roadmapData.durationMonths || 6}</span>-month learning journey
                 </p>
             </motion.div>
-
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* CONTROL PANEL - Duration Selector & Key Metrics */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="bg-gray-900/60 border border-gray-800 rounded-lg p-4 mb-8"
-            >
-                <div className="flex items-center justify-between gap-6">
-                    <div>
-                        <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">Learning Duration</h3>
-                        <div className="flex gap-2">
-                            {durationOptions.map((opt) => (
-                                <motion.button
-                                    key={opt}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => regenerateRoadmap(opt)}
-                                    disabled={regenerating}
-                                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                                        duration === opt
-                                            ? 'border-2'
-                                            : 'border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600'
-                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                    style={
-                                        duration === opt
-                                            ? {
-                                                  backgroundColor: COLORS.accent.primary,
-                                                  color: '#000',
-                                                  borderColor: COLORS.accent.primary,
-                                              }
-                                            : {}
-                                    }
-                                >
-                                    {opt}m
-                                </motion.button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="text-right border-l border-gray-700 pl-6">
-                        <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">Current Pace</div>
-                        <div className="text-lg font-bold text-cyan-400">{roadmapData?.intensityLevel || 'Moderate'}</div>
-                    </div>
-                </div>
-            </motion.div>
-
-            {regenerating && <LoadingOverlay />}
 
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {/* CONTROL PANEL - Key Metrics */}
@@ -289,7 +184,7 @@ export default function RoadmapPage() {
             {/* ═══════════════════════════════════════════════════════════════════ */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="space-y-6">
                 {phases && phases.length > 0 ? (
-                    phases.map((phase: RoadmapPhase, phaseIdx: number) => (
+                    phases.map((phase: any, phaseIdx: number) => (
                         <motion.div
                             key={phaseIdx}
                             initial={{ opacity: 0, x: -20 }}
@@ -304,7 +199,7 @@ export default function RoadmapPage() {
                                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.accent.primary }} />
                                         {phase.phase}
                                     </h2>
-                                    <p className="text-xs text-gray-500 mt-1">Phase {phaseIdx + 1} of {phases.length}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Duration: {phase.duration}</p>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-2xl font-bold text-cyan-400">{phase.modules?.length || 0}</div>
@@ -315,7 +210,7 @@ export default function RoadmapPage() {
                             {/* Modules Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                                 {phase.modules && phase.modules.length > 0 ? (
-                                    phase.modules.map((module: Module, modIdx: number) => (
+                                    phase.modules.map((module: any, modIdx: number) => (
                                         <motion.div
                                             key={modIdx}
                                             whileHover={{ scale: 1.02, borderColor: COLORS.accent.primary }}
@@ -431,7 +326,7 @@ export default function RoadmapPage() {
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {/* AI REASONING - Why This Roadmap */}
             {/* ═══════════════════════════════════════════════════════════════════ */}
-            {roadmapData?.reasoning && (
+            {roadmapData.reasoning && (
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -447,3 +342,4 @@ export default function RoadmapPage() {
         </div>
     )
 }
+

@@ -14,6 +14,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
     }
 
+    if (!groqClient) {
+      const normalizedInput = String(userInput).toLowerCase().trim()
+      const matchedRole = candidateRoles.find(
+        (role: any) =>
+          role?.name?.toLowerCase() === normalizedInput ||
+          role?.name?.toLowerCase()?.includes(normalizedInput) ||
+          normalizedInput.includes(role?.name?.toLowerCase())
+      ) || candidateRoles[0]
+
+      return NextResponse.json({
+        success: true,
+        matchedRole: matchedRole?.id,
+        matchedRoleName: matchedRole?.name,
+        confidence: 0.6,
+        reasoning: 'GROQ_API_KEY not configured, used deterministic fallback matching.',
+      })
+    }
+
     // Build a prompt that will help GROQ understand which role the user means
     const roleDescriptions = candidateRoles
       .map(

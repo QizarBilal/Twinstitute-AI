@@ -49,7 +49,7 @@ model User {
 
   // ─── PORTFOLIO PUBLISHING ──────────────────────────────────────────
   portfolioPublished   Boolean   @default(false)
-  portfolioToken       String?   @unique
+  portfolioToken       String?   @map("portfolioToken")
   portfolioPublishedAt DateTime?
 
   createdAt            DateTime  @default(now())
@@ -62,7 +62,6 @@ model User {
   labSubmissions       LabSubmission[]
   capabilityCredits    CapabilityCredit[]
   simulationRuns       SimulationRun[]
-  strategySignals      StrategySignal[]
   proofArtifacts       ProofArtifact[]
   interviewEvaluations InterviewEvaluation[]
   mentorSessions       MentorSession[]
@@ -326,33 +325,6 @@ model SimulationRun {
 
   status          String   @default("running") // running | completed | failed
   completedAt     DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  @@index([userId])
-}
-
-// ─── STRATEGY SIGNALS ─────────────────────────────────────────────────────────
-
-model StrategySignal {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId          String   @db.ObjectId
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // CRITICAL: Store final domain selection decision
-  domainSelected  String   // FINAL domain from all orientation data
-  confidenceScore Float    // 0-100 confidence in this domain selection
-  
-  signalType      String   // deepen | switch_path | publish_project | build_portfolio | attempt_interview | change_strategy
-  urgency         String   @default("medium") // low | medium | high | critical
-  title           String
-  reasoning       String
-  agentConsensus  String   @default("{}") // JSON — which agents voted for what
-  actionItems     String   @default("[]") // JSON array
-  isAcknowledged  Boolean  @default(false)
-  isActedUpon     Boolean  @default(false)
-
-  generatedAt     DateTime @default(now())
-  acknowledgedAt  DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   @@index([userId])

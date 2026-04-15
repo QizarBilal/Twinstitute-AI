@@ -41,21 +41,6 @@ export interface DomainSelection {
     timestamp: string
 }
 
-export interface StrategySignal {
-    id: string
-    userId: string
-    domainSelected: string
-    confidenceScore: number
-    signalType: 'deepen' | 'switch_path' | 'publish_project' | 'build_portfolio' | 'attempt_interview' | 'change_strategy'
-    urgency: 'low' | 'medium' | 'high' | 'critical'
-    title: string
-    reasoning: string
-    actionItems: ActionItem[]
-    isAcknowledged: boolean
-    isActedUpon: boolean
-    generatedAt: string
-}
-
 export interface ActionItem {
     id: string
     title: string

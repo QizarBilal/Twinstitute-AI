@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Groq } from 'groq-sdk'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null
 
 interface EvaluateRequest {
     code: string
@@ -20,6 +20,10 @@ interface EvaluationFeedback {
 
 export async function POST(request: NextRequest) {
     try {
+        if (!groq) {
+            throw new Error('GROQ_API_KEY not configured')
+        }
+
         const { code, taskContext } = (await request.json()) as EvaluateRequest
 
         const systemPrompt = `You are an expert code evaluator. Evaluate this solution for the task:

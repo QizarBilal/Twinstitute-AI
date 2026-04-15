@@ -27,9 +27,11 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
 // Initialize Groq SDK client
-export const groqClient = new Groq({
-  apiKey: GROQ_API_KEY,
-})
+export const groqClient = GROQ_API_KEY
+  ? new Groq({
+      apiKey: GROQ_API_KEY,
+    })
+  : null
 
 console.log('[groq-client] Groq SDK initialized successfully with API key present:', !!GROQ_API_KEY)
 

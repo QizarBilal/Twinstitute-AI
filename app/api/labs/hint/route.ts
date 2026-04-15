@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Groq } from 'groq-sdk'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null
 
 interface HintRequest {
     taskId?: string
@@ -11,6 +11,10 @@ interface HintRequest {
 
 export async function POST(request: NextRequest) {
     try {
+        if (!groq) {
+            throw new Error('GROQ_API_KEY not configured')
+        }
+
         const { taskContext, level } = (await request.json()) as HintRequest
 
         const hintPrompts = {

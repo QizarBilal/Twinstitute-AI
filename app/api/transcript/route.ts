@@ -8,7 +8,7 @@ export async function GET() {
     if (!session?.user?.id) return unauthorized()
 
     // Gather all user data
-    const [user, twin, genome, credits, labs, proofs, milestones, signals] = await Promise.all([
+    const [user, twin, genome, credits, labs, proofs, milestones] = await Promise.all([
       prisma.user.findUnique({ where: { id: session.user.id } }),
       prisma.capabilityTwin.findUnique({ where: { userId: session.user.id } }),
       prisma.skillGenome.findUnique({ where: { userId: session.user.id } }),
@@ -20,7 +20,6 @@ export async function GET() {
       }),
       prisma.proofArtifact.findMany({ where: { userId: session.user.id } }),
       prisma.milestone.findMany({ where: { userId: session.user.id } }),
-      prisma.strategySignal.findMany({ where: { userId: session.user.id } }),
     ])
 
     // Credit totals
@@ -93,7 +92,6 @@ export async function GET() {
         progress: `${m.currentValue}/${m.targetValue}`,
         completed: m.isCompleted,
       })),
-      strategyHistory: signals.length,
       generatedAt: new Date().toISOString(),
       verifiedBy: 'Twinstitute AI Engine v1.0',
     }
