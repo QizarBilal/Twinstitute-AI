@@ -47,8 +47,8 @@ export default function AnalyticsPage() {
                 fetch('/api/analytics/institution').then(r => r.json())
             ])
 
-            setAnalytics(cohortRes || [])
-            setInstitutionMetrics(institutionRes)
+            setAnalytics(cohortRes?.data || [])
+            setInstitutionMetrics(institutionRes?.data || null)
         } catch (error) {
             console.error('Failed to fetch analytics:', error)
         } finally {
