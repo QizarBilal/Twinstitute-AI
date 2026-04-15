@@ -49,10 +49,9 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [twin, labs] = await Promise.all([
-          fetch('/api/twin', { credentials: 'include' }).then(r => r.json()).catch(() => null),
-          fetch('/api/labs', { credentials: 'include' }).then(r => r.json()).catch(() => null),
-        ])
+        const response = await fetch('/api/capability-twin/scoring', { credentials: 'include' })
+        const result = await response.json()
+        const twin = result.data
         
         setStats({
           capabilityScore:      twin?.overallScore         ?? 0,
