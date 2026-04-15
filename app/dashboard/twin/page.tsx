@@ -74,13 +74,14 @@ export default function TwinPage() {
     const levelColor = levelColors[capabilityData.capabilityLevel] || levelColors.foundation
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
+        <div className="px-8 py-8 space-y-6 min-h-screen bg-black">
+            {/* Header Section */}
             <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between"
+                className="bg-gradient-to-r from-slate-900/50 via-slate-800/30 to-slate-900/50 border border-slate-700/50 rounded-2xl p-8 backdrop-blur-xl"
             >
+                <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-white">🧬 Capability Twin</h1>
                     <p className="text-gray-400 text-sm mt-1">Your real-time capability profile & growth tracking</p>

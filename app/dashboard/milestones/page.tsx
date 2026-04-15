@@ -71,14 +71,14 @@ export default function MilestonesPage() {
   const phases = Object.entries(data.phases)
 
   return (
-    <div className="space-y-6">
+    <div className="px-8 py-8 space-y-6 min-h-screen bg-black">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-950/30 to-cyan-950/30 border border-blue-900/30 rounded-xl p-6"
+        className="bg-gradient-to-r from-slate-900/50 via-slate-800/30 to-slate-900/50 border border-slate-700/50 rounded-2xl p-8 backdrop-blur-xl"
       >
-        <h1 className="text-3xl font-bold text-white mb-2">Milestone Tracking</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">📊 Milestone Tracking</h1>
         <p className="text-gray-400">Track your roadmap modules and learning progress</p>
       </motion.div>
 
@@ -89,21 +89,21 @@ export default function MilestonesPage() {
         transition={{ delay: 0.1 }}
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
-        <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Total Modules</div>
-          <div className="text-3xl font-bold text-white">{data.totalModules}</div>
+        <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 backdrop-blur">
+          <div className="text-xs text-slate-400 uppercase tracking-wide mb-2">Total Modules</div>
+          <div className="text-3xl font-bold text-slate-200">{data.totalModules}</div>
         </div>
-        <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Completed</div>
-          <div className="text-3xl font-bold text-green-400">{data.completedModules}</div>
+        <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 backdrop-blur">
+          <div className="text-xs text-slate-400 uppercase tracking-wide mb-2">Completed</div>
+          <div className="text-3xl font-bold text-emerald-400">{data.completedModules}</div>
         </div>
-        <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">In Progress</div>
+        <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 backdrop-blur">
+          <div className="text-xs text-slate-400 uppercase tracking-wide mb-2">In Progress</div>
           <div className="text-3xl font-bold text-blue-400">{data.inProgressModules}</div>
         </div>
-        <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Not Started</div>
-          <div className="text-3xl font-bold text-gray-400">{data.notStartedModules}</div>
+        <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 backdrop-blur">
+          <div className="text-xs text-slate-400 uppercase tracking-wide mb-2">Not Started</div>
+          <div className="text-3xl font-bold text-slate-500">{data.notStartedModules}</div>
         </div>
       </motion.div>
 
@@ -112,7 +112,7 @@ export default function MilestonesPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 backdrop-blur-sm"
+        className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 backdrop-blur"
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">Overall Progress</h3>
@@ -140,7 +140,7 @@ export default function MilestonesPage() {
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
             selectedPhase === null
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-900/60 border border-gray-800 text-gray-300 hover:border-gray-700'
+              : 'bg-slate-900/50 border border-slate-700/50 text-slate-300 hover:border-slate-600'
           }`}
         >
           All Phases
@@ -152,7 +152,7 @@ export default function MilestonesPage() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               selectedPhase === phase
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-900/60 border border-gray-800 text-gray-300 hover:border-gray-700'
+                : 'bg-slate-900/50 border border-slate-700/50 text-slate-300 hover:border-slate-600'
             }`}
           >
             {phase}
@@ -168,7 +168,7 @@ export default function MilestonesPage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 + index * 0.05 }}
-            className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-sm hover:border-gray-700 transition-all"
+            className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 backdrop-blur hover:border-slate-600 transition-all"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">

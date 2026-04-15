@@ -104,20 +104,20 @@ export default function StrategyPage() {
   const successSignals = data.signals.filter(s => s.type === 'success')
 
   return (
-    <div className="space-y-6">
+    <div className="px-8 py-8 space-y-6 min-h-screen bg-black">
       {/* Header with Health Status */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`bg-gradient-to-r ${getHealthColor(data.overallHealth)} border rounded-xl p-6`}
+        className="bg-gradient-to-r from-slate-900/50 via-slate-800/30 to-slate-900/50 border border-slate-700/50 rounded-2xl p-8 backdrop-blur-xl"
       >
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-3xl font-bold text-white">Strategy Signals</h1>
+          <h1 className="text-3xl font-bold text-white">🎯 Strategy Signals</h1>
           <span className="text-4xl">{getHealthIcon(data.overallHealth)}</span>
         </div>
-        <p className="text-gray-400">AI-free rules-based insights for your learning journey</p>
+        <p className="text-slate-400">AI-free rules-based insights for your learning journey</p>
         <div className="mt-4">
-          <p className="text-sm text-gray-300 mb-1">Overall Health Status</p>
+          <p className="text-sm text-slate-300 mb-1">Overall Health Status</p>
           <p className="text-2xl font-bold text-white capitalize">{data.overallHealth}</p>
         </div>
       </motion.div>
@@ -128,7 +128,7 @@ export default function StrategyPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 backdrop-blur-sm"
+          className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 backdrop-blur"
         >
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <span className="text-xl">📋</span> Recommended Actions
@@ -140,10 +140,10 @@ export default function StrategyPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 + idx * 0.05 }}
-                className="flex items-start gap-3 p-3 bg-gray-800/40 rounded-lg"
+                className="flex items-start gap-3 p-3 bg-slate-800/40 rounded-lg"
               >
                 <span className="text-cyan-400 flex-shrink-0">→</span>
-                <p className="text-gray-300">{item}</p>
+                <p className="text-slate-300">{item}</p>
               </motion.div>
             ))}
           </div>
@@ -288,7 +288,7 @@ export default function StrategyPage() {
         >
           <p className="text-4xl mb-4">🎯</p>
           <h3 className="text-lg font-semibold text-white mb-2">No Issues Detected</h3>
-          <p className="text-gray-400">Your learning strategy is on track!</p>
+          <p className="text-slate-400">Your learning strategy is on track!</p>
         </motion.div>
       )}
     </div>

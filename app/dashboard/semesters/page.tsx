@@ -76,15 +76,15 @@ export default function SemestersPage() {
   const last7Days = data.dailyActivity.slice(-7)
 
   return (
-    <div className="space-y-6">
+    <div className="px-8 py-8 space-y-6 min-h-screen bg-black">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-purple-950/30 to-pink-950/30 border border-purple-900/30 rounded-xl p-6"
+        className="bg-gradient-to-r from-slate-900/50 via-slate-800/30 to-slate-900/50 border border-slate-700/50 rounded-2xl p-8 backdrop-blur-xl"
       >
-        <h1 className="text-3xl font-bold text-white mb-2">Semester Overview</h1>
-        <p className="text-gray-400">{data.semesterName}</p>
+        <h1 className="text-3xl font-bold text-white mb-2">📚 Semester Overview</h1>
+        <p className="text-slate-400">{data.semesterName}</p>
       </motion.div>
 
       {/* Key Metrics */}
@@ -94,25 +94,25 @@ export default function SemestersPage() {
         transition={{ delay: 0.1 }}
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
-        <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Week Progress</div>
+        <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 backdrop-blur">
+          <div className="text-xs text-slate-400 uppercase tracking-wide mb-2">Week Progress</div>
           <div className="text-3xl font-bold text-blue-400">{data.currentWeek}/{data.totalWeeks}</div>
-          <p className="text-xs text-gray-500 mt-2">{Math.round((data.currentWeek / data.totalWeeks) * 100)}% through</p>
+          <p className="text-xs text-slate-500 mt-2">{Math.round((data.currentWeek / data.totalWeeks) * 100)}% through</p>
         </div>
-        <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Learning Velocity</div>
-          <div className="text-3xl font-bold text-green-400">{data.learningVelocity}</div>
-          <p className="text-xs text-gray-500 mt-2">tasks/week</p>
+        <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 backdrop-blur">
+          <div className="text-xs text-slate-400 uppercase tracking-wide mb-2">Learning Velocity</div>
+          <div className="text-3xl font-bold text-emerald-400">{data.learningVelocity}</div>
+          <p className="text-xs text-slate-500 mt-2">tasks/week</p>
         </div>
-        <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Avg Time/Task</div>
+        <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 backdrop-blur">
+          <div className="text-xs text-slate-400 uppercase tracking-wide mb-2">Avg Time/Task</div>
           <div className="text-3xl font-bold text-cyan-400">{data.averageTimePerTask}</div>
-          <p className="text-xs text-gray-500 mt-2">minutes</p>
+          <p className="text-xs text-slate-500 mt-2">minutes</p>
         </div>
-        <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">Consistency</div>
+        <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 backdrop-blur">
+          <div className="text-xs text-slate-400 uppercase tracking-wide mb-2">Consistency</div>
           <div className="text-3xl font-bold text-purple-400">{data.consistencyScore}%</div>
-          <p className="text-xs text-gray-500 mt-2">last 30 days</p>
+          <p className="text-xs text-slate-500 mt-2">last 30 days</p>
         </div>
       </motion.div>
 
@@ -121,21 +121,21 @@ export default function SemestersPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 backdrop-blur-sm"
+        className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 backdrop-blur"
       >
         <h3 className="text-lg font-semibold text-white mb-4">Semester Statistics</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
           <div>
-            <p className="text-gray-400 text-sm mb-1">Total Tasks Completed</p>
-            <p className="text-3xl font-bold text-white">{data.totalTasksCompleted}</p>
+            <p className="text-slate-400 text-sm mb-1">Total Tasks Completed</p>
+            <p className="text-3xl font-bold text-slate-200">{data.totalTasksCompleted}</p>
           </div>
           <div>
-            <p className="text-gray-400 text-sm mb-1">Total Time Invested</p>
-            <p className="text-3xl font-bold text-white">{formatTime(data.totalTimeSpent)}</p>
+            <p className="text-slate-400 text-sm mb-1">Total Time Invested</p>
+            <p className="text-3xl font-bold text-slate-200">{formatTime(data.totalTimeSpent)}</p>
           </div>
           <div>
-            <p className="text-gray-400 text-sm mb-1">Semester Duration</p>
-            <p className="text-3xl font-bold text-white">{data.totalWeeks} weeks</p>
+            <p className="text-slate-400 text-sm mb-1">Semester Duration</p>
+            <p className="text-3xl font-bold text-slate-200">{data.totalWeeks} weeks</p>
           </div>
         </div>
       </motion.div>
@@ -145,7 +145,7 @@ export default function SemestersPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 backdrop-blur-sm"
+        className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 backdrop-blur"
       >
         <h3 className="text-lg font-semibold text-white mb-4">Last 7 Days Activity</h3>
         <div className="grid grid-cols-7 gap-2">
@@ -157,7 +157,7 @@ export default function SemestersPage() {
                   <div
                     className={`w-full aspect-square rounded-lg mb-2 flex items-center justify-center font-semibold transition-all ${
                       day.tasksCompleted === 0
-                        ? 'bg-gray-800 text-gray-600'
+                        ? 'bg-slate-800 text-slate-600'
                         : intensity < 0.33
                         ? 'bg-blue-900/40 text-blue-300'
                         : intensity < 0.67
@@ -167,12 +167,12 @@ export default function SemestersPage() {
                   >
                     {day.tasksCompleted}
                   </div>
-                  <p className="text-xs text-gray-500">{new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                  <p className="text-xs text-slate-500">{new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                 </div>
               )
             })
           ) : (
-            <p className="text-gray-500 col-span-7 text-center py-8">No activity data available</p>
+            <p className="text-slate-500 col-span-7 text-center py-8">No activity data available</p>
           )}
         </div>
       </motion.div>
@@ -182,33 +182,33 @@ export default function SemestersPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 backdrop-blur-sm"
+        className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 backdrop-blur"
       >
         <h3 className="text-lg font-semibold text-white mb-4">Weekly Progress</h3>
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {data.weeklyProgress.length > 0 ? (
             data.weeklyProgress.map((week, idx) => (
-              <div key={idx} className="border border-gray-700/50 rounded-lg p-4">
+              <div key={idx} className="border border-slate-700/50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="font-semibold text-white">Week {idx + 1}</p>
-                    <p className="text-xs text-gray-500">{new Date(week.weekStart).toLocaleDateString()} - {new Date(week.weekEnd).toLocaleDateString()}</p>
+                    <p className="text-xs text-slate-500">{new Date(week.weekStart).toLocaleDateString()} - {new Date(week.weekEnd).toLocaleDateString()}</p>
                   </div>
                   <span className="text-lg font-bold text-cyan-400">{week.progressPercentage}%</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-3">
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Tasks: {week.tasksCompleted}</p>
-                    <p className="text-xs text-gray-500">Time: {formatTime(week.timeSpent)}</p>
+                    <p className="text-xs text-slate-500 mb-1">Tasks: {week.tasksCompleted}</p>
+                    <p className="text-xs text-slate-500">Time: {formatTime(week.timeSpent)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Modules Started: {week.modulesStarted}</p>
-                    <p className="text-xs text-gray-500">Modules Completed: {week.modulesCompleted}</p>
+                    <p className="text-xs text-slate-500 mb-1">Modules Started: {week.modulesStarted}</p>
+                    <p className="text-xs text-slate-500">Modules Completed: {week.modulesCompleted}</p>
                   </div>
                 </div>
 
-                <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${week.progressPercentage}%` }}
