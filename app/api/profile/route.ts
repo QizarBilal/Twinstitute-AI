@@ -1,74 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
+import { getAuthSession } from '@/lib/api-auth'
 import { prisma } from '@/lib/prisma'
 
-// Helper to create standardized responses
-const response = {
-  success: (data: any, status = 200) => NextResponse.json(data, { status }),
-  error: (message: string, status = 400) =>
-    NextResponse.json({ error: message }, { status }),
-}
-
-// ─── GET /api/profile ────────────────────────────────────────────────────
-// Fetch current user's profile
-export async function GET(req: NextRequest) {
+/**
+ * GET /api/profile
+ * Fetch authenticated user's profile with all educational and personal info
+ */
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession()
-
-    if (!session?.user?.email) {
-      return response.error('Unauthorized', 401)
+    const session = await getAuthSession()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: session.user.id },
       select: {
         id: true,
-        email: true,
         fullName: true,
-        avatarUrl: true,
+        email: true,
+        mobile: true,
+        college: true,
+        degree: true,
+        stream: true,
+        joinYear: true,
+        gradYear: true,
+        street: true,
+        city: true,
+        state: true,
+        pincode: true,
         emailVerified: true,
-        selectedRole: true,
-        capabilityTwin: {
-          select: {
-            targetRole: true,
-            readinessScore: true,
-            overallScore: true,
-          },
-        },
-        createdAt: true,
         updatedAt: true,
+        selectedRole: true,
+        selectedDomain: true,
       },
     })
 
     if (!user) {
-      return response.error('User not found', 404)
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return response.success({
-      ...user,
-      targetRole: user.capabilityTwin?.targetRole || user.selectedRole || 'Software Development Engineer',
-      roleReadiness: user.capabilityTwin?.readinessScore || 72,
-      alignmentScore: user.capabilityTwin?.overallScore || 78,
-    })
+    console.log('[Profile] GET successful for user:', user.id)
+    return NextResponse.json(user, { status: 200 })
   } catch (error) {
-    console.error('GET /api/profile error:', error)
-    return response.error('Internal server error', 500)
+    console.error('[Profile] GET error:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to fetch profile' },
+      { status: 500 }
+    )
   }
 }
 
-// ─── PATCH /api/profile ────────────────────────────────────────────────────
-// Update user's profile
-export async function PATCH(req: NextRequest) {
+/**
+ * PATCH /api/profile
+ * Update authenticated user's profile with personal, educational, and address information
+ */
+export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession()
-
-    if (!session?.user?.email) {
-      return response.error('Unauthorized', 401)
+    const session = await getAuthSession()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await req.json()
+    const body = await request.json()
 
-    // Validate input
+    // Extract fields
     const {
       fullName,
       mobile,
@@ -83,88 +79,83 @@ export async function PATCH(req: NextRequest) {
       pincode,
     } = body
 
-    // Basic validation
-    if (fullName && fullName.trim().length === 0) {
-      return response.error('Name cannot be empty', 400)
-    }
-
-    // Validate year fields
-    if (joinYear && gradYear && joinYear >= gradYear) {
-      return response.error('Graduation year must be after join year', 400)
+    // Validate required fields
+    if (!fullName || fullName.trim().length === 0) {
+      return NextResponse.json({ error: 'Full name is required' }, { status: 400 })
     }
 
     // Validate mobile format if provided
     if (mobile && !/^\d{10}$/.test(mobile.replace(/\D/g, ''))) {
-      return response.error('Invalid mobile number format', 400)
+      return NextResponse.json({ error: 'Mobile must be 10 digits' }, { status: 400 })
     }
 
-    // Validate pincode if provided
+    // Validate pincode format if provided
     if (pincode && !/^\d{6}$/.test(pincode.replace(/\D/g, ''))) {
-      return response.error('Invalid pincode format', 400)
+      return NextResponse.json({ error: 'Pincode must be 6 digits' }, { status: 400 })
     }
 
-    // Build update data dynamically - only include defined fields
-    const updateData: Record<string, any> = {}
-    
-    if (fullName !== undefined) updateData.fullName = fullName
-    if (mobile !== undefined) updateData.mobile = mobile ? mobile : null
-    if (college !== undefined) updateData.college = college ? college : null
-    if (degree !== undefined) updateData.degree = degree ? degree : null
-    if (stream !== undefined) updateData.stream = stream ? stream : null
-    if (joinYear !== undefined) updateData.joinYear = joinYear ? parseInt(joinYear.toString()) : null
-    if (gradYear !== undefined) updateData.gradYear = gradYear ? parseInt(gradYear.toString()) : null
-    if (street !== undefined) updateData.street = street ? street : null
-    if (city !== undefined) updateData.city = city ? city : null
-    if (state !== undefined) updateData.state = state ? state : null
-    if (pincode !== undefined) updateData.pincode = pincode ? pincode : null
-
-    // If no fields to update, return current user
-    if (Object.keys(updateData).length === 0) {
-      const currentUser = await (prisma.user.findUnique as any)({
-        where: { email: session.user.email },
-      })
-      return response.success(currentUser)
-    }
-
-    // Attempt update with all fields first
-    try {
-      const updatedUser = await (prisma.user.update as any)({
-        where: { email: session.user.email },
-        data: updateData,
-      })
-      return response.success(updatedUser)
-    } catch (error: any) {
-      // If certain fields cause errors, retry with core fields only
-      console.warn('Full update failed, retrying with core fields:', error.message)
-      
-      const coreData: Record<string, any> = {}
-      if (fullName !== undefined) coreData.fullName = fullName
-      
-      if (Object.keys(coreData).length === 0) {
-        const currentUser = await (prisma.user.findUnique as any)({
-          where: { email: session.user.email },
-        })
-        return response.success(currentUser)
+    // Validate year data if both provided
+    if (joinYear && gradYear) {
+      const joinYearNum = parseInt(joinYear.toString())
+      const gradYearNum = parseInt(gradYear.toString())
+      if (joinYearNum >= gradYearNum) {
+        return NextResponse.json(
+          { error: 'Graduation year must be after joining year' },
+          { status: 400 }
+        )
       }
-      
-      const updatedUser = await (prisma.user.update as any)({
-        where: { email: session.user.email },
-        data: coreData,
-      })
-      
-      // Store extended profile fields in a separate location or return partial success
-      console.warn('Profile update partial: core fields updated, extended fields may require schema migration')
-      
-      return response.success({
-        ...updatedUser,
-        warning: 'Some profile fields could not be updated. Please ensure database schema is synchronized.',
-      })
     }
+
+    // Build update object
+    const updateData = {
+      fullName: fullName?.trim(),
+      mobile: mobile?.trim() || null,
+      college: college?.trim() || null,
+      degree: degree?.trim() || null,
+      stream: stream?.trim() || null,
+      joinYear: joinYear ? parseInt(joinYear.toString()) : null,
+      gradYear: gradYear ? parseInt(gradYear.toString()) : null,
+      street: street?.trim() || null,
+      city: city?.trim() || null,
+      state: state?.trim() || null,
+      pincode: pincode?.trim() || null,
+    }
+
+    // Update user in database
+    const updatedUser = await prisma.user.update({
+      where: { id: session.user.id },
+      data: updateData,
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        mobile: true,
+        college: true,
+        degree: true,
+        stream: true,
+        joinYear: true,
+        gradYear: true,
+        street: true,
+        city: true,
+        state: true,
+        pincode: true,
+        emailVerified: true,
+        updatedAt: true,
+        selectedRole: true,
+        selectedDomain: true,
+      },
+    })
+
+    console.log('[Profile] PATCH successful for user:', updatedUser.id)
+    return NextResponse.json(updatedUser, { status: 200 })
   } catch (error) {
-    console.error('PATCH /api/profile error:', error)
+    console.error('[Profile] PATCH error:', error)
     if (error instanceof SyntaxError) {
-      return response.error('Invalid JSON in request body', 400)
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 })
     }
-    return response.error('Internal server error', 500)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to update profile' },
+      { status: 500 }
+    )
   }
 }

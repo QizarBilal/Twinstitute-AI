@@ -26,7 +26,9 @@ function buildSkillAnalyses(nodes: any[]) {
   return analyses
 }
 
-function getSkillMeaning(skillName: string): string {
+function getSkillMeaning(skillName: string | undefined): string {
+  if (!skillName) return 'Skill Understanding'
+  
   const meanings: Record<string, string> = {
     javascript: 'The foundational language enabling dynamic web interactions',
     typescript: 'Superset of JavaScript adding static type checking for safer codebases',
@@ -56,7 +58,8 @@ function getSkillMeaning(skillName: string): string {
   return meanings[skillName.toLowerCase()] || `Understanding of ${skillName}`
 }
 
-function getWorkContext(skillName: string): string {
+function getWorkContext(skillName: string | undefined): string {
+  if (!skillName) return 'Professional development contexts'
   const contexts: Record<string, string> = {
     javascript: 'Frontend development, automation, scripting',
     typescript: 'Large projects, type-safe services',

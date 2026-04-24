@@ -10,6 +10,7 @@ import {
   DifferenceSection,
   OutcomeSection,
   FinalCTASection,
+  AlumniTestimonialsSection,
   Footer,
 } from './LandingSections'
 
@@ -64,7 +65,10 @@ export const LandingPage = () => {
         {/* 9. FINAL CTA */}
         <FinalCTASection />
 
-        {/* 10. FOOTER */}
+        {/* 10. ALUMNI TESTIMONIALS */}
+        <AlumniTestimonialsSection />
+
+        {/* 11. FOOTER */}
         <Footer />
       </main>
     </div>

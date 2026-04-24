@@ -220,16 +220,14 @@ export default function TopNavigation() {
                       <span>Settings</span>
                     </Link>
 
-                    <button
-                      onClick={() => {
-                        // Show help or documentation
-                        setShowProfileMenu(false)
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+                    <Link
+                      href="/dashboard/help-support"
+                      onClick={() => setShowProfileMenu(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
                     >
                       <HelpCircle size={16} />
                       <span>Help & Support</span>
-                    </button>
+                    </Link>
                   </div>
 
                   {/* Logout Button */}

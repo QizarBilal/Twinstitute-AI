@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { exportToPDF } from '@/lib/pdf-export'
 
 interface TranscriptData {
     student: { name: string; email: string; accountType: string; joinedAt: string }
@@ -32,12 +33,13 @@ const creditTypeColors: Record<string, string> = {
 export default function TranscriptPage() {
     const [transcript, setTranscript] = useState<TranscriptData | null>(null)
     const [loading, setLoading] = useState(true)
+    const [isDownloading, setIsDownloading] = useState(false)
 
     useEffect(() => {
         fetch('/api/transcript', { credentials: 'include' })
             .then(res => res.json())
-            .then(data => { setTranscript(data); setLoading(false) })
-            .catch(() => setLoading(false))
+            .then(data => { setTranscript(data.data); setLoading(false) })
+            .catch(err => { console.error(err); setLoading(false) })
     }, [])
 
     if (loading) {
@@ -58,43 +60,95 @@ export default function TranscriptPage() {
     const twin = transcript.capabilityTwin
     const perf = transcript.labPerformance
 
+    const downloadTranscript = async () => {
+        setIsDownloading(true)
+        try {
+            const success = await exportToPDF('transcript-content', transcript.student.name.replace(/\s+/g, '_') + '_Formation_Transcript')
+            if (success) {
+                console.log('Transcript PDF exported successfully')
+            }
+        } catch (error) {
+            console.error('Error downloading transcript:', error)
+        } finally {
+            setIsDownloading(false)
+        }
+    }
+
     return (
-        <div className="space-y-6 pb-10">
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+        <div className="px-8 py-8 space-y-6 min-h-screen bg-black">
+            <div id="transcript-content" className="space-y-6">
+            {/* Header */}
+            <motion.div 
+                initial={{ opacity: 0, y: -10 }} 
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between"
+            >
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Capability Transcript</h1>
-                    <p className="text-gray-400 text-sm mt-1">Your complete, verified formation record — exportable and recruiter-ready.</p>
+                    <h1 className="text-3xl font-bold text-white">Formation Record</h1>
+                    <p className="text-slate-400 text-sm mt-1">Your complete, verified capability transcript</p>
                 </div>
-                <button className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-purple-500/20">
-                    📄 Export PDF
+                <button 
+                    onClick={downloadTranscript}
+                    disabled={isDownloading}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {isDownloading ? 'Downloading...' : 'Export PDF'}
                 </button>
             </motion.div>
 
-            {/* Student Header */}
+            {/* Student Profile Card */}
             <motion.div
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1 }}
-                className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border border-indigo-500/20 rounded-2xl p-8"
+                className="bg-gradient-to-r from-slate-900/50 via-slate-800/30 to-slate-900/50 border border-slate-700/50 rounded-2xl p-8 backdrop-blur-xl"
             >
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-3xl font-bold text-white">{transcript.student.name}</h2>
-                        <p className="text-indigo-300/80 text-sm mt-1">{transcript.student.email}</p>
-                        <div className="flex items-center gap-3 mt-3">
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 capitalize">
+                    <div className="flex-1">
+                        <h2 className="text-4xl font-bold text-white mb-2">{transcript.student.name}</h2>
+                        <p className="text-slate-400 text-sm mb-4">{transcript.student.email}</p>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-medium capitalize">
                                 {transcript.student.accountType}
                             </span>
-                            <span className="text-xs text-gray-400">
-                                Joined {new Date(transcript.student.joinedAt).toLocaleDateString()}
+                            <span className="text-xs text-slate-500">
+                                Joined {new Date(transcript.student.joinedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                             </span>
                         </div>
                     </div>
                     <div className="text-right">
-                        <div className="text-xs text-gray-400 mb-1">Overall Capability Score</div>
-                        <div className="text-5xl font-bold text-white">{twin?.overallScore || 0}</div>
-                        <div className="text-xs text-indigo-400 capitalize mt-1">{twin?.stage || 'Foundation'} Stage</div>
+                        <p className="text-slate-400 text-xs mb-2 uppercase tracking-wide">Overall Score</p>
+                        <div className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 mb-1">
+                            {twin?.overallScore || 0}
+                        </div>
+                        <p className="text-slate-400 text-xs capitalize font-medium">{twin?.stage || 'Foundation'} Stage</p>
                     </div>
+                </div>
+            </motion.div>
+
+            {/* Key Metrics */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="grid grid-cols-3 gap-4"
+            >
+                <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 backdrop-blur">
+                    <p className="text-slate-400 text-xs uppercase tracking-wide mb-2">Readiness</p>
+                    <div className="text-3xl font-bold text-slate-200 mb-2">{twin?.readinessScore || 0}%</div>
+                    <div className="w-full h-1.5 bg-slate-800 rounded-full">
+                        <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full" style={{ width: `${twin?.readinessScore || 0}%` }} />
+                    </div>
+                </div>
+                <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 backdrop-blur">
+                    <p className="text-slate-400 text-xs uppercase tracking-wide mb-2">Formation Velocity</p>
+                    <div className="text-3xl font-bold text-slate-200">{twin?.formationVelocity || 0}</div>
+                    <p className="text-slate-500 text-xs mt-2">points per week</p>
+                </div>
+                <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 backdrop-blur">
+                    <p className="text-slate-400 text-xs uppercase tracking-wide mb-2">Lab Submissions</p>
+                    <div className="text-3xl font-bold text-slate-200">{perf.totalSubmissions}</div>
+                    <p className="text-slate-500 text-xs mt-2">{perf.passed} passed</p>
                 </div>
             </motion.div>
 
@@ -103,98 +157,77 @@ export default function TranscriptPage() {
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 }}
-                    className="bg-gray-900 border border-gray-800 rounded-2xl p-6"
+                    transition={{ delay: 0.2 }}
+                    className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 backdrop-blur"
                 >
-                    <h3 className="text-sm font-semibold text-gray-300 mb-5">Capability Dimensions</h3>
-                    <div className="grid grid-cols-4 gap-4">
-                        {Object.entries(twin.dimensions).map(([key, value], idx) => (
-                            <div key={key} className="bg-gray-800/50 rounded-xl p-4">
-                                <div className="text-xs text-gray-500 capitalize mb-2">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
-                                <div className="text-xl font-bold text-white mb-2">{value}%</div>
-                                <div className="h-1.5 bg-gray-700 rounded-full">
-                                    <div className="h-full rounded-full bg-indigo-500" style={{ width: `${value}%` }} />
+                    <h3 className="text-lg font-semibold text-white mb-6">Capability Dimensions</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        {Object.entries(twin.dimensions).slice(0, 8).map(([key, value]) => (
+                            <div key={key} className="bg-slate-800/30 rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-slate-300 text-sm font-medium capitalize">
+                                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                                    </p>
+                                    <span className="text-blue-400 font-bold text-sm">{value}%</span>
+                                </div>
+                                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${value}%` }}
+                                        transition={{ duration: 1, ease: 'easeOut' }}
+                                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-500"
+                                    />
                                 </div>
                             </div>
                         ))}
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 mt-4">
-                        <div className="bg-gray-800/50 rounded-xl p-4">
-                            <div className="text-xs text-gray-500 mb-1">Target Role</div>
-                            <div className="text-sm font-semibold text-white">{twin.targetRole || 'Not set'}</div>
-                        </div>
-                        <div className="bg-gray-800/50 rounded-xl p-4">
-                            <div className="text-xs text-gray-500 mb-1">Readiness Score</div>
-                            <div className="text-sm font-semibold text-green-400">{twin.readinessScore}%</div>
-                        </div>
-                        <div className="bg-gray-800/50 rounded-xl p-4">
-                            <div className="text-xs text-gray-500 mb-1">Formation Velocity</div>
-                            <div className="text-sm font-semibold text-blue-400">{twin.formationVelocity} pts/wk</div>
-                        </div>
                     </div>
                 </motion.div>
             )}
 
-            {/* Credit Summary */}
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-gray-900 border border-gray-800 rounded-2xl p-6"
-            >
-                <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-sm font-semibold text-gray-300">Capability Credits</h3>
-                    <span className="text-2xl font-bold text-purple-400">{transcript.credits.grand_total} total</span>
-                </div>
-                <div className="grid grid-cols-6 gap-3">
-                    {Object.entries(transcript.credits).filter(([k]) => k !== 'grand_total').map(([type, amount]) => (
-                        <div key={type} className="text-center bg-gray-800/50 rounded-xl p-4">
-                            <div className="w-8 h-8 rounded-full mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: `${creditTypeColors[type]}20` }}>
-                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: creditTypeColors[type] }} />
-                            </div>
-                            <div className="text-lg font-bold text-white">{amount}</div>
-                            <div className="text-[10px] text-gray-500 capitalize">{type.replace('_', ' ')}</div>
-                        </div>
-                    ))}
-                </div>
-            </motion.div>
-
-            {/* Lab Performance */}
+            {/* Credits & Performance */}
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 }}
-                className="bg-gray-900 border border-gray-800 rounded-2xl p-6"
+                className="grid grid-cols-2 gap-4"
             >
-                <h3 className="text-sm font-semibold text-gray-300 mb-5">Lab Performance</h3>
-                <div className="grid grid-cols-3 gap-4 mb-5">
-                    <div className="bg-gray-800/50 rounded-xl p-4 text-center">
-                        <div className="text-3xl font-bold text-blue-400">{perf.totalSubmissions}</div>
-                        <div className="text-xs text-gray-500 mt-1">Total Submissions</div>
-                    </div>
-                    <div className="bg-gray-800/50 rounded-xl p-4 text-center">
-                        <div className="text-3xl font-bold text-green-400">{perf.passed}</div>
-                        <div className="text-xs text-gray-500 mt-1">Passed</div>
-                    </div>
-                    <div className="bg-gray-800/50 rounded-xl p-4 text-center">
-                        <div className="text-3xl font-bold text-purple-400">{perf.avgScore}</div>
-                        <div className="text-xs text-gray-500 mt-1">Avg Score</div>
-                    </div>
-                </div>
-                {perf.taskBreakdown.length > 0 && (
-                    <div className="space-y-2">
-                        <div className="text-xs text-gray-500 mb-2">Task Type Breakdown</div>
-                        {perf.taskBreakdown.map((tb, i) => (
-                            <div key={i} className="flex items-center gap-3">
-                                <span className="text-xs text-gray-400 w-28 capitalize">{tb.type.replace('_', ' ')}</span>
-                                <div className="flex-1 h-2 bg-gray-800 rounded-full">
-                                    <div className="h-full rounded-full bg-blue-500" style={{ width: `${Math.min(100, (tb.count / Math.max(perf.totalSubmissions, 1)) * 100)}%` }} />
-                                </div>
-                                <span className="text-xs text-gray-300 w-8">{tb.count}</span>
+                {/* Capability Credits */}
+                <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 backdrop-blur">
+                    <h3 className="text-lg font-semibold text-white mb-6">Capability Credits</h3>
+                    <div className="grid grid-cols-3 gap-3">
+                        {Object.entries(transcript.credits).filter(([k]) => k !== 'grand_total').map(([type, amount]) => (
+                            <div key={type} className="bg-slate-800/50 rounded-lg p-4 text-center">
+                                <p className="text-2xl font-bold text-blue-400 mb-1">{amount}</p>
+                                <p className="text-xs text-slate-500 capitalize">{type.replace('_', ' ')}</p>
                             </div>
                         ))}
                     </div>
-                )}
+                    <div className="mt-4 pt-4 border-t border-slate-700/50">
+                        <p className="text-xs text-slate-400 mb-2">Total Credits</p>
+                        <p className="text-3xl font-bold text-slate-200">{transcript.credits.grand_total}</p>
+                    </div>
+                </div>
+
+                {/* Lab Performance */}
+                <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 backdrop-blur">
+                    <h3 className="text-lg font-semibold text-white mb-6">Lab Performance</h3>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
+                            <span className="text-slate-300 text-sm">Pass Rate</span>
+                            <span className="text-blue-400 font-bold">
+                                {perf.totalSubmissions > 0 ? Math.round((perf.passed / perf.totalSubmissions) * 100) : 0}%
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
+                            <span className="text-slate-300 text-sm">Average Score</span>
+                            <span className="text-emerald-400 font-bold">{perf.avgScore}%</span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
+                            <span className="text-slate-300 text-sm">Submissions</span>
+                            <span className="text-cyan-400 font-bold">{perf.totalSubmissions}</span>
+                        </div>
+                    </div>
+                </div>
             </motion.div>
 
             {/* Milestones */}
@@ -202,18 +235,28 @@ export default function TranscriptPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="bg-gray-900 border border-gray-800 rounded-2xl p-6"
+                className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 backdrop-blur"
             >
-                <h3 className="text-sm font-semibold text-gray-300 mb-5">Formation Milestones</h3>
+                <h3 className="text-lg font-semibold text-white mb-6">Formation Milestones</h3>
                 <div className="grid grid-cols-2 gap-3">
                     {transcript.milestones.map((m, i) => (
-                        <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border ${m.completed ? 'bg-green-500/5 border-green-500/20' : 'bg-gray-800/30 border-gray-700/50'}`}>
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${m.completed ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-400'}`}>
-                                {m.completed ? '✓' : '○'}
-                            </div>
-                            <div className="flex-1">
-                                <div className="text-sm text-white font-medium">{m.title}</div>
-                                <div className="text-xs text-gray-500">{m.progress}</div>
+                        <div 
+                            key={i} 
+                            className={`flex items-center gap-4 p-4 rounded-lg border transition-all ${
+                                m.completed 
+                                    ? 'bg-emerald-500/10 border-emerald-500/30' 
+                                    : 'bg-slate-800/30 border-slate-700/50'
+                            }`}
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                                m.completed 
+                                    ? 'bg-emerald-500 text-white' 
+                                    : 'bg-slate-700 text-slate-400'
+                            }`}>
+                                {m.completed ? '✓' : '.'}</div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-slate-200 font-medium text-sm truncate">{m.title}</p>
+                                <p className="text-slate-500 text-xs">{m.progress}</p>
                             </div>
                         </div>
                     ))}
@@ -226,26 +269,28 @@ export default function TranscriptPage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.35 }}
-                    className="bg-gray-900 border border-gray-800 rounded-2xl p-6"
+                    className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 backdrop-blur"
                 >
-                    <h3 className="text-sm font-semibold text-gray-300 mb-5">Proof Artifacts</h3>
+                    <h3 className="text-lg font-semibold text-white mb-6">Proof Artifacts</h3>
                     <div className="space-y-3">
                         {transcript.proofArtifacts.map((proof, i) => (
-                            <div key={i} className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-sm">📜</div>
-                                    <div>
-                                        <div className="text-sm font-medium text-white">{proof.title}</div>
-                                        <div className="text-xs text-gray-500 capitalize">{proof.type.replace('_', ' ')}</div>
-                                    </div>
+                            <div key={i} className="flex items-center justify-between p-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                                <div className="flex-1">
+                                    <p className="text-slate-200 font-medium">{proof.title}</p>
+                                    <p className="text-slate-500 text-xs capitalize">{proof.type.replace('_', ' ')}</p>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 ml-4">
                                     {proof.capabilityLevel && (
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${proof.capabilityLevel === 'Advanced' ? 'bg-green-500/15 text-green-400' : proof.capabilityLevel === 'Intermediate' ? 'bg-blue-500/15 text-blue-400' : 'bg-gray-700 text-gray-400'}`}>
+                                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                                            proof.capabilityLevel === 'Advanced' 
+                                                ? 'bg-emerald-500/20 text-emerald-400'
+                                                : proof.capabilityLevel === 'Intermediate'
+                                                ? 'bg-blue-500/20 text-blue-400'
+                                                : 'bg-slate-700 text-slate-400'
+                                        }`}>
                                             {proof.capabilityLevel}
                                         </span>
                                     )}
-                                    {proof.isPublic && <span className="text-xs text-gray-500">🌐 Public</span>}
                                 </div>
                             </div>
                         ))}
@@ -258,12 +303,12 @@ export default function TranscriptPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-center text-xs text-gray-600 pt-4 border-t border-gray-800"
+                className="text-center text-xs text-slate-500 pt-6 border-t border-slate-700/50"
             >
-                Generated by Twinstitute AI Engine — {new Date(transcript.generatedAt).toLocaleString()}
-                <br />
-                This transcript is a verified, machine-generated record of capability formation.
+                <p>Generated by Twinstitute AI Engine — {new Date(transcript.generatedAt).toLocaleString()}</p>
+                <p className="mt-1">This transcript is a verified, machine-generated record of your capability formation.</p>
             </motion.div>
+            </div>
         </div>
     )
 }

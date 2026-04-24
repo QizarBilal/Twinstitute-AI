@@ -1,6 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextRequest } from 'next/server'
+import { getAuthSession, unauthorized, success, serverError } from '@/lib/api-auth'
 import { prisma } from '@/lib/prisma'
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getAuthSession()
+
+    if (!session?.user?.email) {
+      return unauthorized('Not authenticated')
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: {
+        labSubmissions: {
+          take: 50,
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    })
+
+    if (!user) {
+      return serverError('User not found')
+    }
+
+    const completedCount = user.labSubmissions.filter(s => s.status === 'passed').length
+    const totalAttempts = user.labSubmissions.length
+    const avgScore = totalAttempts > 0 ? 
+      Math.round(user.labSubmissions.reduce((sum, s) => sum + (s.scoreTotal || 0), 0) / totalAttempts) : 0
+
+    return success({
+      completedCount,
+      totalAttempts,
+      averageScore: avgScore,
+      successRate: totalAttempts > 0 ? Math.round((completedCount / totalAttempts) * 100) : 0,
+      recentSubmissions: user.labSubmissions.slice(0, 10).map(s => ({
+        id: s.id,
+        taskId: s.taskId,
+        score: s.scoreTotal,
+        status: s.status,
+        submittedAt: s.createdAt,
+        timeSpent: s.timeSpentMin,
+      })),
+    })
+  } catch (error) {
+    console.error('Progress GET error:', error)
+    return serverError(error instanceof Error ? error.message : 'Failed to fetch progress')
+  }
+}
 
 interface ProgressUpdateRequest {
   taskId: string
