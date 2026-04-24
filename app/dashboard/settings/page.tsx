@@ -1,16 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, Bell, Lock, Save, Github, AlertTriangle, Edit2, Check, X, AlertCircle } from 'lucide-react'
+import { Settings, Bell, Lock, Save, Github, Linkedin, AlertTriangle, Edit2, Check, X, AlertCircle } from 'lucide-react'
+import dynamic from 'next/dynamic'
+
+// Lazy load heavy component
+const ProfileOptimizationDashboard = dynamic(
+  () => import('@/components/dashboard/ProfileOptimizationDashboard'),
+  { loading: () => <div className="h-40 bg-gray-900/50 border border-gray-800 rounded-lg animate-pulse" /> }
+)
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 }
 
-// ─── TOAST NOTIFICATION COMPONENT ─────────────────────────────────────────
+// ─── MEMOIZED TOAST NOTIFICATION COMPONENT ──────────────────────────────
 type ToastType = 'success' | 'error' | 'info'
 
 interface Toast {
@@ -19,7 +26,7 @@ interface Toast {
   type: ToastType
 }
 
-function Toast({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
+const Toast = memo(function Toast({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
   useEffect(() => {
     const timer = setTimeout(onDismiss, 4000)
     return () => clearTimeout(timer)
@@ -53,17 +60,17 @@ function Toast({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
       </button>
     </motion.div>
   )
-}
+})
 
-// ─── SKELETON LOADER ──────────────────────────────────────────────────────
-function SkeletonField() {
+// ─── MEMOIZED SKELETON LOADER ────────────────────────────────────────────
+const SkeletonField = memo(function SkeletonField() {
   return (
     <div className="space-y-2">
       <div className="h-4 bg-gray-700 rounded w-24 animate-pulse" />
       <div className="h-10 bg-gray-800 rounded animate-pulse" />
     </div>
   )
-}
+})
 
 interface UserProfile {
   id: string
@@ -81,6 +88,8 @@ interface UserProfile {
   state: string
   emailVerified: boolean
   updatedAt: string
+  selectedRole?: string
+  selectedDomain?: string
 }
 
 export default function SettingsPage() {
@@ -95,46 +104,251 @@ export default function SettingsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [toasts, setToasts] = useState<Toast[]>([])
 
-  // ─── LOAD PROFILE ON MOUNT ────────────────────────────────────────────
-  useEffect(() => {
-    loadProfile()
-  }, [])
+  // ─── INTEGRATIONS STATE ──────────────────────────────────────────────
+  const [integrations, setIntegrations] = useState<Record<string, any>>({
+    github: { isConnected: false, isLoading: false },
+    linkedin: { isConnected: false, isLoading: false },
+    leetcode: { isConnected: false, isLoading: false, username: '' },
+  })
+  const [leetcodeInput, setLeetcodeInput] = useState('')
+  const [showLeetcodeInput, setShowLeetcodeInput] = useState(false)
+  const [linkedinInput, setLinkedinInput] = useState('')
+  const [showLinkedinManual, setShowLinkedinManual] = useState(false)
 
-  const loadProfile = async () => {
+  // ─── LOAD PROFILE & INTEGRATIONS IN PARALLEL ──────────────────────────
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  const loadProfile = useCallback(async (signal: AbortSignal) => {
     try {
-      setIsLoading(true)
       const res = await fetch('/api/profile', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
+        signal,
       })
 
-      if (!res.ok) {
-        throw new Error('Failed to fetch profile')
-      }
+      if (!res.ok) throw new Error('Failed to fetch profile')
 
       const data = await res.json()
       setProfile(data)
       setEditData(data)
     } catch (error) {
-      showToast('Failed to load profile', 'error')
-      console.error('Profile load error:', error)
-    } finally {
-      setIsLoading(false)
+      if (error instanceof Error && error.name !== 'AbortError') {
+        showToast('Failed to load profile', 'error')
+        console.error('Profile load error:', error)
+      }
     }
-  }
+  }, [])
 
-  // ─── TOAST MANAGEMENT ────────────────────────────────────────────────
-  const showToast = (message: string, type: ToastType = 'info') => {
+  const loadIntegrations = useCallback(async (signal: AbortSignal) => {
+    try {
+      const res = await fetch('/api/integrations/status', { signal })
+      if (res.ok) {
+        const data = await res.json()
+        const integrationsMap: Record<string, any> = {
+          github: { isConnected: false, isLoading: false },
+          linkedin: { isConnected: false, isLoading: false },
+          leetcode: { isConnected: false, isLoading: false, username: '' },
+        }
+
+        data.data.forEach((integration: any) => {
+          integrationsMap[integration.platform] = {
+            isConnected: integration.isConnected,
+            isLoading: false,
+            username: integration.platformUsername || '',
+            lastSynced: integration.lastSyncedAt,
+          }
+        })
+
+        setIntegrations(integrationsMap)
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('Failed to load integrations:', error)
+      }
+    }
+  }, [])
+
+  // ─── INITIAL DATA LOAD (PARALLEL) ──────────────────────────────────
+  useEffect(() => {
+    setIsLoading(true)
+    abortControllerRef.current = new AbortController()
+    const signal = abortControllerRef.current.signal
+
+    // Load profile and integrations in parallel
+    Promise.all([
+      loadProfile(signal),
+      loadIntegrations(signal)
+    ]).finally(() => {
+      setIsLoading(false)
+    })
+
+    // Check for OAuth callback
+    const params = new URLSearchParams(window.location.search)
+    const successPlatform = params.get('integration_success')
+    const errorPlatform = params.get('integration_error')
+    const errorMessage = params.get('message')
+
+    if (successPlatform) {
+      showToast(`${successPlatform} connected successfully!`, 'success')
+      setIntegrations(prev => ({
+        ...prev,
+        [successPlatform]: { ...prev[successPlatform], isConnected: true, isLoading: false },
+      }))
+      window.history.replaceState({}, document.title, '/dashboard/settings')
+    }
+
+    if (errorPlatform) {
+      showToast(`Failed to connect ${errorPlatform}: ${errorMessage || 'Unknown error'}`, 'error')
+      setIntegrations(prev => ({
+        ...prev,
+        [errorPlatform]: { ...prev[errorPlatform], isLoading: false },
+      }))
+      window.history.replaceState({}, document.title, '/dashboard/settings')
+    }
+
+    return () => {
+      abortControllerRef.current?.abort()
+    }
+  }, [loadProfile, loadIntegrations])
+
+  const handleConnectOAuth = useCallback(async (platform: 'github' | 'linkedin') => {
+    setIntegrations(prev => ({
+      ...prev,
+      [platform]: { ...prev[platform], isLoading: true },
+    }))
+
+    try {
+      window.location.href = `/api/integrations/${platform}/auth`
+    } catch (error) {
+      showToast(`Failed to connect ${platform}`, 'error')
+      setIntegrations(prev => ({
+        ...prev,
+        [platform]: { ...prev[platform], isLoading: false },
+      }))
+    }
+  }, [])
+
+  const handleConnectLeetCode = useCallback(async () => {
+    if (!leetcodeInput.trim()) {
+      showToast('Please enter a LeetCode username', 'error')
+      return
+    }
+
+    setIntegrations(prev => ({
+      ...prev,
+      leetcode: { ...prev.leetcode, isLoading: true },
+    }))
+
+    try {
+      const res = await fetch('/api/integrations/leetcode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: leetcodeInput.trim() }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to connect LeetCode')
+      }
+
+      showToast('LeetCode connected successfully!', 'success')
+      setIntegrations(prev => ({
+        ...prev,
+        leetcode: {
+          isConnected: true,
+          isLoading: false,
+          username: leetcodeInput.trim(),
+        },
+      }))
+      setLeetcodeInput('')
+      setShowLeetcodeInput(false)
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to connect LeetCode', 'error')
+      setIntegrations(prev => ({
+        ...prev,
+        leetcode: { ...prev.leetcode, isLoading: false },
+      }))
+    }
+  }, [leetcodeInput])
+
+  const handleConnectLinkedInManual = useCallback(async () => {
+    if (!linkedinInput.trim()) {
+      showToast('Please enter a LinkedIn profile URL or username', 'error')
+      return
+    }
+
+    setIntegrations(prev => ({
+      ...prev,
+      linkedin: { ...prev.linkedin, isLoading: true },
+    }))
+
+    try {
+      const res = await fetch('/api/integrations/linkedin/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileUrl: linkedinInput.trim() }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to connect LinkedIn')
+      }
+
+      showToast('LinkedIn profile connected successfully!', 'success')
+      setIntegrations(prev => ({
+        ...prev,
+        linkedin: {
+          isConnected: true,
+          isLoading: false,
+        },
+      }))
+      setLinkedinInput('')
+      setShowLinkedinManual(false)
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to connect LinkedIn', 'error')
+      setIntegrations(prev => ({
+        ...prev,
+        linkedin: { ...prev.linkedin, isLoading: false },
+      }))
+    }
+  }, [linkedinInput])
+
+  const handleDisconnect = useCallback(async (platform: 'github' | 'linkedin' | 'leetcode') => {
+    if (!confirm(`Are you sure you want to disconnect ${platform}?`)) return
+
+    try {
+      await fetch(`/api/integrations/status`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      showToast(`${platform} disconnected successfully`, 'success')
+      setIntegrations(prev => ({
+        ...prev,
+        [platform]: {
+          isConnected: false,
+          isLoading: false,
+          username: '',
+        },
+      }))
+    } catch (error) {
+      showToast('Failed to disconnect', 'error')
+    }
+  }, [])
+
+  // ─── CHECK FOR OAUTH CALLBACK (HANDLED IN MAIN USEEFFECT) ─────────────
+
+  // ─── MEMOIZED TOAST & UTILITY FUNCTIONS ────────────────────────────────
+  const showToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = Date.now().toString()
     setToasts(prev => [...prev, { id, message, type }])
-  }
+  }, [])
 
-  const dismissToast = (id: string) => {
+  const dismissToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id))
-  }
+  }, [])
 
-  // ─── VALIDATION ──────────────────────────────────────────────────────
-  const validateProfile = (data: Partial<UserProfile>): boolean => {
+  const validateProfile = useCallback((data: Partial<UserProfile>): boolean => {
     const newErrors: Record<string, string> = {}
 
     if (data.fullName && data.fullName.trim().length === 0) {
@@ -155,10 +369,9 @@ export default function SettingsPage() {
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }
+  }, [])
 
-  // ─── SAVE PROFILE ────────────────────────────────────────────────────
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!validateProfile(editData)) {
       showToast('Please fix validation errors', 'error')
       return
@@ -167,7 +380,6 @@ export default function SettingsPage() {
     try {
       setIsSaving(true)
 
-      // Prepare data for submission
       const submitData = {
         fullName: editData.fullName,
         mobile: editData.mobile,
@@ -206,24 +418,23 @@ export default function SettingsPage() {
     } finally {
       setIsSaving(false)
     }
-  }
+  }, [editData, validateProfile, showToast])
 
-  // ─── EDIT HANDLERS ────────────────────────────────────────────────────
-  const handleEdit = () => {
+  const handleEdit = useCallback(() => {
     setEditData(profile || {})
     setErrors({})
     setIsEditing(true)
-  }
+  }, [profile])
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setEditData(profile || {})
     setErrors({})
     setIsEditing(false)
-  }
+  }, [profile])
 
-  const handleFieldChange = (field: string, value: any) => {
+  const handleFieldChange = useCallback((field: string, value: any) => {
     setEditData(prev => ({ ...prev, [field]: value }))
-  }
+  }, [])
 
   // ─── SETTINGS STATE ───────────────────────────────────────────────────
   const [settings, setSettings] = useState({
@@ -234,9 +445,74 @@ export default function SettingsPage() {
     strictMode: true,
   })
 
-  const handleToggle = (key: keyof typeof settings) => {
+  // ─── AGENT CONFIGURATION STATE ────────────────────────────────────────
+  const [agentMode, setAgentMode] = useState<'strict' | 'balanced' | 'encouraging'>('strict')
+  const [isResettingTwin, setIsResettingTwin] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [resetConfirmStep, setResetConfirmStep] = useState<'confirm' | 'verify'>(
+    'confirm'
+  )
+  const [resetVerificationInput, setResetVerificationInput] = useState('')
+
+  const handleToggle = useCallback((key: keyof typeof settings) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }))
-  }
+  }, [])
+
+  const handleAgentModeChange = useCallback((mode: 'strict' | 'balanced' | 'encouraging') => {
+    setAgentMode(mode)
+    showToast(`Agent mode changed to ${mode === 'strict' ? 'Strict Mode' : mode === 'balanced' ? 'Balanced Mentorship' : 'Encouraging Beginner'}`, 'success')
+  }, [showToast])
+
+  const handleResetDigitalTwin = useCallback(async () => {
+    try {
+      setIsResettingTwin(true)
+      const res = await fetch('/api/twin/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.message || 'Failed to reset Digital Twin')
+      }
+
+      showToast('Digital Twin has been successfully reset. Page will reload...', 'success')
+      setShowResetConfirm(false)
+      setResetConfirmStep('confirm')
+      setResetVerificationInput('')
+      setTimeout(() => window.location.reload(), 2000)
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to reset Digital Twin', 'error')
+      console.error('Reset error:', error)
+    } finally {
+      setIsResettingTwin(false)
+    }
+  }, [showToast])
+
+  const handleOpenResetDialog = useCallback(() => {
+    setShowResetConfirm(true)
+    setResetConfirmStep('confirm')
+    setResetVerificationInput('')
+  }, [])
+
+  const handleCloseResetDialog = useCallback(() => {
+    setShowResetConfirm(false)
+    setResetConfirmStep('confirm')
+    setResetVerificationInput('')
+  }, [])
+
+  const handleConfirmReset = useCallback(() => {
+    setResetConfirmStep('verify')
+    setResetVerificationInput('')
+  }, [])
+
+  const handleVerifyAndReset = useCallback(() => {
+    if (resetVerificationInput !== 'RESET') {
+      showToast('Incorrect verification code. Please type "RESET" exactly.', 'error')
+      return
+    }
+    handleResetDigitalTwin()
+  }, [resetVerificationInput, showToast, handleResetDigitalTwin])
 
   return (
     <motion.div
@@ -356,6 +632,37 @@ export default function SettingsPage() {
                     ) : (
                       <p className="text-white mt-2">{profile?.mobile || '—'}</p>
                     )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Career Profile - Read-only */}
+          <div className="dashboard-card">
+            <h3 className="text-sm font-semibold text-purple-400 mb-4 uppercase tracking-wider">Career Profile</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {isLoading ? (
+                <>
+                  <SkeletonField />
+                  <SkeletonField />
+                </>
+              ) : (
+                <>
+                  {/* Finalized Role */}
+                  <div>
+                    <label className="stat-label">Finalized Role</label>
+                    <div className="w-full mt-2 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-gray-300 flex items-center">
+                      <p>{profile?.selectedRole || '—'}</p>
+                    </div>
+                  </div>
+
+                  {/* Finalized Domain */}
+                  <div>
+                    <label className="stat-label">Finalized Domain</label>
+                    <div className="w-full mt-2 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-gray-300 flex items-center">
+                      <p>{profile?.selectedDomain || '—'}</p>
+                    </div>
                   </div>
                 </>
               )}
@@ -627,26 +934,40 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-3">
-          {['Strict Mode (Enterprise Standard)', 'Balanced Mentorship', 'Encouraging Beginner'].map((level, i) => (
-            <div
-              key={i}
-              onClick={() => handleToggle(i === 0 ? 'strictMode' : 'strictMode')}
-              className="dashboard-card flex items-center justify-between cursor-pointer hover:bg-gray-800/80"
+          {[
+            { id: 'strict', label: 'Strict Mode (Enterprise Standard)', desc: 'Enterprise-grade feedback with detailed critiques' },
+            { id: 'balanced', label: 'Balanced Mentorship', desc: 'Balanced approach to learning and guidance' },
+            { id: 'encouraging', label: 'Encouraging Beginner', desc: 'Encouraging feedback for beginners' },
+          ].map((option) => (
+            <motion.button
+              key={option.id}
+              onClick={() => handleAgentModeChange(option.id as 'strict' | 'balanced' | 'encouraging')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`w-full dashboard-card flex items-center justify-between cursor-pointer transition-all ${
+                agentMode === option.id
+                  ? 'border-blue-600/60 bg-blue-600/10'
+                  : 'hover:border-gray-700 hover:bg-gray-800/50'
+              }`}
             >
-              <div>
-                <p className="text-sm font-semibold text-white mb-1">{level}</p>
-                <p className="text-xs text-gray-500">
-                  {i === 0 && 'Enterprise-grade feedback with detailed critiques'}
-                  {i === 1 && 'Balanced approach to learning and guidance'}
-                  {i === 2 && 'Encouraging feedback for beginners'}
-                </p>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-white mb-1">{option.label}</p>
+                <p className="text-xs text-gray-500">{option.desc}</p>
               </div>
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                i === 0 ? 'bg-blue-600 border-blue-600' : 'border-gray-600'
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                agentMode === option.id
+                  ? 'bg-blue-600 border-blue-600'
+                  : 'border-gray-600 hover:border-blue-400'
               }`}>
-                {i === 0 && <div className="w-2 h-2 rounded-full bg-white" />}
+                {agentMode === option.id && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="w-2 h-2 rounded-full bg-white"
+                  />
+                )}
               </div>
-            </div>
+            </motion.button>
           ))}
         </div>
       </motion.div>
@@ -662,6 +983,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-3">
+          {/* GitHub */}
           <div className="dashboard-card flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center border border-gray-700">
@@ -669,14 +991,88 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">GitHub Connector</p>
-                <p className="text-xs text-gray-500 mt-1">Not connected</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {integrations.github.isConnected ? '✓ Connected' : 'Not connected'}
+                </p>
               </div>
             </div>
-            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg transition-colors flex-shrink-0">
-              Connect
+            <button
+              onClick={() =>
+                integrations.github.isConnected
+                  ? handleDisconnect('github')
+                  : handleConnectOAuth('github')
+              }
+              disabled={integrations.github.isLoading}
+              className={`px-4 py-2 font-semibold text-sm rounded-lg transition-colors flex-shrink-0 ${
+                integrations.github.isConnected
+                  ? 'bg-red-600/20 hover:bg-red-600/30 text-red-400'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {integrations.github.isLoading
+                ? 'Connecting...'
+                : integrations.github.isConnected
+                  ? 'Disconnect'
+                  : 'Connect'}
             </button>
           </div>
 
+          {/* LinkedIn - Unified Connection */}
+          <div className="dashboard-card">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-600/10 rounded-lg flex items-center justify-center border border-blue-600/30">
+                  <Linkedin size={24} className="text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">LinkedIn Connector</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {integrations.linkedin.isConnected ? '✓ Connected' : 'Not connected'}
+                  </p>
+                </div>
+              </div>
+              {integrations.linkedin.isConnected && (
+                <button
+                  onClick={() => handleDisconnect('linkedin')}
+                  className="px-3 py-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-semibold rounded-lg transition-colors"
+                >
+                  Disconnect
+                </button>
+              )}
+            </div>
+            
+            {!integrations.linkedin.isConnected ? (
+              <div className="space-y-3">
+                <p className="text-xs text-gray-400 mb-3">
+                  Enter your LinkedIn profile URL or username
+                </p>
+                <input
+                  type="text"
+                  value={linkedinInput}
+                  onChange={(e) => setLinkedinInput(e.target.value)}
+                  placeholder="e.g., https://www.linkedin.com/in/yourprofile or yourprofile"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleConnectLinkedInManual}
+                    disabled={integrations.linkedin.isLoading || !linkedinInput.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {integrations.linkedin.isLoading ? 'Connecting...' : 'Connect'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-green-600/10 border border-green-600/30 rounded-lg">
+                <p className="text-xs text-green-400">
+                  ✓ LinkedIn profile connected as: <span className="font-semibold">{integrations.linkedin.username || 'LinkedIn User'}</span>
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* LeetCode */}
           <div className="dashboard-card flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center border border-yellow-600/30">
@@ -684,14 +1080,79 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">LeetCode Connector</p>
-                <p className="text-xs text-gray-500 mt-1">Not connected</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {integrations.leetcode.isConnected
+                    ? `✓ Connected (@${integrations.leetcode.username})`
+                    : 'Not connected'}
+                </p>
               </div>
             </div>
-            <button className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 font-semibold text-sm rounded-lg transition-colors flex-shrink-0">
-              Connect
-            </button>
+            {integrations.leetcode.isConnected ? (
+              <button
+                onClick={() => handleDisconnect('leetcode')}
+                className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-semibold text-sm rounded-lg transition-colors flex-shrink-0"
+              >
+                Disconnect
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowLeetcodeInput(!showLeetcodeInput)}
+                className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 font-semibold text-sm rounded-lg transition-colors flex-shrink-0"
+              >
+                Connect
+              </button>
+            )}
           </div>
+
+          {/* LeetCode Username Input */}
+          {showLeetcodeInput && !integrations.leetcode.isConnected && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="dashboard-card">
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">LeetCode Username</label>
+                  <input
+                    type="text"
+                    value={leetcodeInput}
+                    onChange={(e) => setLeetcodeInput(e.target.value)}
+                    placeholder="Enter your LeetCode username"
+                    className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-yellow-500 focus:outline-none transition-colors"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleConnectLeetCode}
+                    disabled={integrations.leetcode.isLoading}
+                    className="flex-1 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 font-semibold text-sm rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {integrations.leetcode.isLoading ? 'Connecting...' : 'Verify & Connect'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowLeetcodeInput(false)
+                      setLeetcodeInput('')
+                    }}
+                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold text-sm rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
+      </motion.div>
+
+      {/* Profile Optimization Intelligence */}
+      <motion.div variants={itemVariants}>
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <Github size={20} className="text-blue-600" />
+            <h2 className="section-title">Career Optimization Intelligence</h2>
+          </div>
+          <p className="section-subtitle">AI-powered analysis to help you land your target role</p>
+        </div>
+
+        <ProfileOptimizationDashboard />
       </motion.div>
 
       {/* Danger Zone */}
@@ -704,21 +1165,254 @@ export default function SettingsPage() {
           <p className="section-subtitle">Irreversible actions that will affect your capability twin</p>
         </div>
 
-        <div className="dashboard-card border-red-600/20 bg-red-950/10 flex items-center justify-between">
+        <motion.div
+          whileHover={{ scale: 1.01 }}
+          className="dashboard-card border-red-600/30 bg-red-950/15 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all hover:border-red-600/50 hover:bg-red-950/25"
+        >
           <div>
             <p className="text-sm font-semibold text-red-400 mb-1">Reset Digital Twin</p>
             <p className="text-xs text-red-400/70">Permanently reset your capability twin and start over</p>
           </div>
-          <button className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-600/40 text-red-400 font-semibold text-sm rounded-lg transition-colors flex-shrink-0">
-            Reset
-          </button>
-        </div>
+          <motion.button
+            onClick={handleOpenResetDialog}
+            disabled={isResettingTwin}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-4 py-2 bg-red-600/30 hover:bg-red-600/40 border border-red-600/50 hover:border-red-600/80 text-red-400 hover:text-red-300 font-semibold text-sm rounded-lg transition-all flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isResettingTwin ? (
+              <span className="flex items-center gap-2">
+                <div className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin" />
+                Resetting...
+              </span>
+            ) : (
+              'Reset'
+            )}
+          </motion.button>
+        </motion.div>
+
+        {/* Warning Message */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 p-4 bg-red-600/10 border border-red-600/30 rounded-lg"
+        >
+          <p className="text-xs text-red-400/80 leading-relaxed">
+            <span className="font-semibold">Warning:</span> This action will permanently delete your Digital Twin and all associated data. You will need to go through the orientation process again. Make sure you have backups of any important information before proceeding.
+          </p>
+        </motion.div>
       </motion.div>
 
       {/* Footer */}
       <div className="text-center text-xs text-gray-600 py-8 border-t border-gray-800">
         <p>Settings • All changes are auto-saved • Your data is encrypted</p>
       </div>
+
+      {/* CUSTOM RESET CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {showResetConfirm && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCloseResetDialog}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed inset-0 z-50 flex items-center justify-center px-4 pointer-events-none"
+            >
+              <div className="pointer-events-auto w-full max-w-md bg-gray-900/95 backdrop-blur border border-gray-800 rounded-xl shadow-2xl overflow-hidden">
+                {/* Close Button */}
+                <div className="absolute top-4 right-4 z-10">
+                  <button
+                    onClick={handleCloseResetDialog}
+                    className="p-1 hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    <X size={20} className="text-gray-400 hover:text-white" />
+                  </button>
+                </div>
+
+                {resetConfirmStep === 'confirm' ? (
+                  <>
+                    {/* STEP 1: CONFIRMATION */}
+                    <div className="p-6 space-y-6">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-600/20 mx-auto">
+                          <AlertTriangle size={24} className="text-red-500" />
+                        </div>
+                        <h2 className="text-xl font-bold text-white text-center">
+                          Reset Digital Twin?
+                        </h2>
+                      </div>
+
+                      <div className="space-y-3 text-sm text-gray-300">
+                        <p className="text-center font-medium">
+                          This action is <span className="text-red-400 font-semibold">PERMANENT</span> and
+                          <span className="text-red-400 font-semibold"> CANNOT BE UNDONE</span>.
+                        </p>
+
+                        <div className="bg-red-600/10 border border-red-600/30 rounded-lg p-4 space-y-2">
+                          <p className="text-xs font-semibold text-red-400 uppercase tracking-wider">
+                            Will be permanently deleted:
+                          </p>
+                          <ul className="space-y-1.5 text-xs text-gray-300">
+                            <li className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                              Capability assessments
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                              Learning history
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                              Progress milestones
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                              Custom recommendations
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                              All capability data
+                            </li>
+                          </ul>
+                        </div>
+
+                        <p className="text-center text-gray-400 text-xs italic">
+                          You will need to complete the orientation process again.
+                        </p>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-3 pt-4">
+                        <motion.button
+                          onClick={handleCloseResetDialog}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="flex-1 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </motion.button>
+                        <motion.button
+                          onClick={handleConfirmReset}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="flex-1 px-4 py-2.5 bg-red-600/80 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                          <AlertTriangle size={16} />
+                          I Understand, Continue
+                        </motion.button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* STEP 2: VERIFICATION */}
+                    <div className="p-6 space-y-6">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-600/20 mx-auto">
+                          <Lock size={24} className="text-red-500" />
+                        </div>
+                        <h2 className="text-xl font-bold text-white text-center">
+                          Final Verification
+                        </h2>
+                      </div>
+
+                      <div className="space-y-4">
+                        <p className="text-sm text-gray-300 text-center">
+                          Type <span className="font-mono font-semibold text-red-400">RESET</span> below to confirm this irreversible action.
+                        </p>
+
+                        <div className="space-y-2">
+                          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            Verification Code
+                          </label>
+                          <input
+                            type="text"
+                            value={resetVerificationInput}
+                            onChange={(e) => setResetVerificationInput(e.target.value)}
+                            placeholder="Type RESET here..."
+                            className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-red-500 focus:outline-none transition-colors font-mono text-center tracking-widest"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === 'Enter' &&
+                                resetVerificationInput === 'RESET'
+                              ) {
+                                handleVerifyAndReset()
+                              }
+                            }}
+                          />
+                        </div>
+
+                        <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-3">
+                          <p className="text-xs text-blue-400 text-center">
+                            💡 <span className="font-semibold">Tip:</span> Make sure you typed it exactly as shown
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-3 pt-4">
+                        <motion.button
+                          onClick={() => {
+                            setResetConfirmStep('confirm')
+                            setResetVerificationInput('')
+                          }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="flex-1 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold rounded-lg transition-colors"
+                        >
+                          Back
+                        </motion.button>
+                        <motion.button
+                          onClick={handleVerifyAndReset}
+                          disabled={
+                            resetVerificationInput !== 'RESET' ||
+                            isResettingTwin
+                          }
+                          whileHover={{
+                            scale:
+                              resetVerificationInput === 'RESET' ? 1.02 : 1,
+                          }}
+                          whileTap={{
+                            scale:
+                              resetVerificationInput === 'RESET' ? 0.98 : 1,
+                          }}
+                          className="flex-1 px-4 py-2.5 bg-red-600/80 hover:bg-red-600 disabled:bg-red-600/40 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                          {isResettingTwin ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Resetting...
+                            </>
+                          ) : resetVerificationInput === 'RESET' ? (
+                            <>
+                              <Check size={16} />
+                              Confirm Reset
+                            </>
+                          ) : (
+                            'Confirm Reset'
+                          )}
+                        </motion.button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

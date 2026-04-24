@@ -57,10 +57,12 @@ model User {
 
   accounts             Account[]
   sessions             Session[]
+  oauthIntegrations    OAuthIntegration[]
   capabilityTwin       CapabilityTwin?
   skillGenome          SkillGenome?
   labSubmissions       LabSubmission[]
   capabilityCredits    CapabilityCredit[]
+  capabilityProofs     CapabilityProof[]
   simulationRuns       SimulationRun[]
   proofArtifacts       ProofArtifact[]
   interviewEvaluations InterviewEvaluation[]
@@ -124,6 +126,41 @@ model LoginAttempt {
   resetAt   DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── OAUTH INTEGRATIONS ─────────────────────────────────────────────────────
+
+model OAuthIntegration {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  platform          String   // github | linkedin | leetcode
+  platformId        String   // User's ID on the platform
+  platformUsername  String?  // Username on the platform
+  platformEmail     String?  // Email on the platform
+  
+  accessToken       String   @db.String // Encrypted
+  refreshToken      String?  @db.String // Encrypted (if applicable)
+  expiresAt         DateTime?
+  
+  // Cached profile data
+  profileData       String   @default("{}") // JSON: name, avatar, bio, etc
+  
+  // Sync status
+  lastSyncedAt      DateTime?
+  syncStatus        String   @default("idle") // idle | syncing | failed
+  syncError         String?
+  
+  isConnected       Boolean  @default(true)
+  disconnectedAt    DateTime?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([userId, platform])
+  @@index([userId])
+  @@index([platform])
 }
 
 // ─── CAPABILITY TWIN ENGINE ──────────────────────────────────────────────────
@@ -209,6 +246,7 @@ model LabTask {
   updatedAt       DateTime @updatedAt
 
   submissions     LabSubmission[]
+  capabilityProofs CapabilityProof[]
   @@index([taskType])
   @@index([domain])
 }
@@ -242,6 +280,7 @@ model LabSubmission {
   updatedAt       DateTime @updatedAt
 
   evaluation      LabEvaluation?
+  capabilityProof CapabilityProof?
   @@index([userId])
   @@index([taskId])
 }
@@ -301,6 +340,39 @@ model CapabilityCredit {
   createdAt       DateTime @default(now())
   @@index([userId])
   @@index([creditType])
+}
+
+// ─── CAPABILITY PROOF ENGINE ──────────────────────────────────────────────────
+
+model CapabilityProof {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Lab/Task reference
+  labId           String   @db.ObjectId
+  lab             LabTask  @relation(fields: [labId], references: [id], onDelete: Cascade)
+  submissionId    String   @unique @db.ObjectId
+  submission      LabSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  // Capability classification
+  capability      String   // Problem Solving, Array Manipulation, String Processing, etc.
+  level           String   // Beginner, Basic, Intermediate, Advanced
+  
+  // Score details
+  score           Int      // 0-100
+  passedTestCases Int
+  totalTestCases  Int
+  
+  // Metadata
+  isLatestBest    Boolean  @default(true) // Track if this is the best attempt
+  verifiedAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([userId, labId]) // One best proof per user per lab
+  @@index([userId])
+  @@index([labId])
 }
 
 // ─── OUTCOME SIMULATION ───────────────────────────────────────────────────────

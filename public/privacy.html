@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Twinstitute AI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0066cc;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #0066cc;
+            margin-top: 30px;
+        }
+        .last-updated {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 30px;
+        }
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        .highlight {
+            background-color: #fffacd;
+            padding: 15px;
+            border-left: 4px solid #ffd700;
+            margin: 20px 0;
+        }
+        .note {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-left: 4px solid #0066cc;
+            margin: 20px 0;
+        }
+        .contact-info {
+            background-color: #f0f0f0;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Privacy Policy</h1>
+        <p class="last-updated">Last Updated: April 16, 2026</p>
+
+        <div class="highlight">
+            <strong>Development Version Notice:</strong> This is a development/testing privacy policy for localhost use only. A complete privacy policy will be provided for production deployment.
+        </div>
+
+        <h2>1. Introduction</h2>
+        <p>
+            Welcome to Twinstitute AI. We are committed to protecting your privacy and ensuring you understand how we collect, use, and protect your personal information. This Privacy Policy explains our practices regarding data collection and use.
+        </p>
+
+        <h2>2. Information We Collect</h2>
+        <p>Twinstitute AI collects the following information through OAuth integrations:</p>
+        <ul>
+            <li><strong>GitHub Data:</strong> Profile information (username, email), repository details, programming languages used, repository stars, public/private repository counts</li>
+            <li><strong>LinkedIn Data:</strong> Profile information (name, email, profile picture), work experience, job titles, skills, endorsements, education</li>
+            <li><strong>LeetCode Data:</strong> Public profile statistics (username, ranking, problems solved, acceptance rate, badges, contribution points)</li>
+        </ul>
+
+        <p>We also collect:</p>
+        <ul>
+            <li>Account registration information (email, password)</li>
+            <li>Profile information (full name, mobile, college, degree, joining/graduation year)</li>
+            <li>Learning activity data (lab submissions, skill assessments, course progress)</li>
+        </ul>
+
+        <h2>3. How We Use Your Information</h2>
+        <p>We use collected information for:</p>
+        <ul>
+            <li>Building your personalized capability twin (AI profile)</li>
+            <li>Analyzing your skill development and learning progress</li>
+            <li>Providing personalized learning recommendations</li>
+            <li>Generating capability reports and insights</li>
+            <li>Improving the Twinstitute AI platform and user experience</li>
+            <li>Communicating important updates and notifications</li>
+        </ul>
+
+        <h2>4. Data Storage and Security</h2>
+        <ul>
+            <li><strong>Encryption:</strong> OAuth access tokens are encrypted before storage in our database</li>
+            <li><strong>Database:</strong> All data is stored in MongoDB with standard security measures</li>
+            <li><strong>Access:</strong> Only your authenticated account can access your personal data</li>
+            <li><strong>Deletion:</strong> Data can be deleted by disconnecting integrations or requesting account deletion</li>
+        </ul>
+
+        <div class="note">
+            <strong>Security Note:</strong> While we implement standard security measures, no system is 100% secure. We recommend using strong passwords and enabling two-factor authentication where available.
+        </div>
+
+        <h2>5. Sharing of Information</h2>
+        <ul>
+            <li><strong>No Third-Party Sharing:</strong> We do not share your personal data with third-party services</li>
+            <li><strong>Internal Use Only:</strong> Data is used internally to provide and improve Twinstitute AI services</li>
+            <li><strong>Legal Compliance:</strong> We may disclose information if required by law</li>
+        </ul>
+
+        <h2>6. User Rights and Control</h2>
+        <p>You have the right to:</p>
+        <ul>
+            <li><strong>View:</strong> Access all data Twinstitute AI has collected about you</li>
+            <li><strong>Disconnect:</strong> Revoke access to your GitHub, LinkedIn, or LeetCode accounts at any time</li>
+            <li><strong>Delete:</strong> Request deletion of your account and associated data</li>
+            <li><strong>Opt-out:</strong> Disable notifications and data collection features</li>
+        </ul>
+
+        <h2>7. OAuth Scopes Explained</h2>
+
+        <h3>GitHub Scopes:</h3>
+        <ul>
+            <li><code>read:user</code> - Read your public profile information</li>
+            <li><code>user:email</code> - Access your email address</li>
+            <li><code>public_repo</code> - Access public repositories</li>
+            <li><code>read:org</code> - Read organization information for contribution tracking</li>
+        </ul>
+
+        <h3>LinkedIn Scopes:</h3>
+        <ul>
+            <li><code>openid</code> - OpenID Connect authentication</li>
+            <li><code>profile</code> - Access your profile information</li>
+            <li><code>email</code> - Access your email address</li>
+        </ul>
+
+        <h2>8. Data Retention</h2>
+        <ul>
+            <li>OAuth tokens are retained for as long as your integration is active</li>
+            <li>Profile data is updated when you click "Sync" or during automatic sync</li>
+            <li>Historical data may be retained for analytics (anonymized)</li>
+            <li>Upon account deletion, all data is permanently removed within 30 days</li>
+        </ul>
+
+        <h2>9. Changes to This Policy</h2>
+        <p>We may update this Privacy Policy periodically. Changes will be effective when posted to this page. Continued use of Twinstitute AI constitutes acceptance of the updated policy.</p>
+
+        <h2>10. Questions and Concerns</h2>
+        <p>If you have questions about this Privacy Policy or our data practices:</p>
+        <div class="contact-info">
+            <p><strong>Email:</strong> privacy@twinstitute.ai</p>
+            <p><strong>Development Contact:</strong> dev@twinstitute.ai</p>
+            <p><strong>Address:</strong> Twinstitute AI, Development Environment</p>
+        </div>
+
+        <h2>11. Development Environment Notice</h2>
+        <div class="highlight">
+            <p>
+                <strong>This Privacy Policy is for Development/Testing Purposes Only</strong>
+            </p>
+            <p>
+                This policy is designed for localhost and testing environments. Before deploying to production:
+            </p>
+            <ul>
+                <li>Review and update all sections for your specific use case</li>
+                <li>Ensure compliance with GDPR, CCPA, and other relevant regulations</li>
+                <li>Update contact information with actual company details</li>
+                <li>Add information about cookies and tracking (if applicable)</li>
+                <li>Specify data retention policies clearly</li>
+                <li>Have the policy reviewed by legal counsel</li>
+            </ul>
+        </div>
+
+        <hr style="margin: 40px 0; border: none; border-top: 1px solid #ddd;">
+        
+        <p style="text-align: center; color: #666; font-size: 14px;">
+            <strong>Twinstitute AI - Development Version</strong><br>
+            Privacy Policy Generated: April 16, 2026<br>
+            Environment: Localhost Testing
+        </p>
+    </div>
+</body>
+</html>

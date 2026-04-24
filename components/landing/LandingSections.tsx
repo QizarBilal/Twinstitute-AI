@@ -796,11 +796,11 @@ export function OutcomeSection() {
 
 /**
  * FINAL CTA SECTION - Powerful closing
- * Conversion point with strong narrative
+ * Conversion point with strong narrative + Centered button
  */
 export function FinalCTASection() {
   return (
-    <section id="portal" className="relative py-24 bg-black overflow-hidden">
+    <section id="portal" className="relative min-h-screen bg-black overflow-hidden flex flex-col items-center justify-center">
       {/* Animated background with parallax */}
       <div className="absolute inset-0 opacity-20">
         {/* Grid pattern that moves slightly */}
@@ -818,7 +818,7 @@ export function FinalCTASection() {
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10 w-full flex flex-col items-center">
         {/* Intro text */}
         <motion.div
           className="text-center mb-16"
@@ -836,7 +836,7 @@ export function FinalCTASection() {
         </motion.div>
 
         {/* Two-column comparison */}
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 max-w-5xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 max-w-5xl w-full mb-16">
           {/* LEFT SIDE - Traditional Path (Faded) */}
           <motion.div
             className="space-y-6 p-8 rounded-2xl border border-gray-800 backdrop-blur-sm hover:border-gray-700 transition-colors"
@@ -919,40 +919,208 @@ export function FinalCTASection() {
           </motion.div>
         </div>
 
-        {/* Core message */}
+        {/* Core message - Centered vertically on page */}
         <motion.div
-          className="text-center mt-16 space-y-6"
+          className="text-center space-y-8 flex flex-col items-center justify-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           viewport={{ once: true }}
         >
-          <div className="space-y-2">
+          <div className="space-y-4">
             <p className="text-gray-400 text-lg">This is not about learning more.</p>
-            <h3 className="text-4xl lg:text-5xl font-bold text-white">
+            <h3 className="text-5xl lg:text-6xl font-bold text-white">
               It's about becoming capable.
             </h3>
           </div>
 
-          {/* CTA Button - Matches Navbar Login Button */}
-          <motion.div
-            className="pt-4"
-            initial={{ opacity: 0, scale: 0.95 }}
+          {/* CTA Button - Perfectly Centered */}
+          <motion.button
+            className="px-8 py-4 rounded-lg text-base font-semibold bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 transition-all shadow-[0_0_30px_rgba(59,130,246,0.4)] flex items-center justify-center gap-2"
+            whileHover={{ scale: 1.08, boxShadow: '0 0 50px rgba(59, 130, 246, 0.6)' }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
             viewport={{ once: true }}
           >
-            <motion.button
-              className="px-8 py-3 rounded-lg text-sm font-semibold bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] flex items-center justify-center gap-2"
-              whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(59, 130, 246, 0.5)' }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Enter Twinstitute
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </motion.button>
+            Enter Twinstitute
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </motion.button>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+/**
+ * ALUMNI TESTIMONIALS SECTION - Carousel of feedback
+ * Infinite loop carousel that pauses on hover
+ */
+export function AlumniTestimonialsSection() {
+  const testimonials = [
+    {
+      id: 1,
+      name: 'Sarah Chen',
+      role: 'Software Engineer at Google',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
+      feedback: 'Twinstitute transformed how I approach learning. The AI twin understood my weak areas before I did, and the execution labs forced me to build real projects. Got my FAANG offer within 6 months.',
+    },
+    {
+      id: 2,
+      name: 'Marcus Johnson',
+      role: 'Senior Backend Developer at Amazon',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop',
+      feedback: 'The proof system is a game-changer. Instead of abstract certificates, I have verifiable evidence of my capabilities. Recruiters were impressed by the quality of my execution artifacts.',
+    },
+    {
+      id: 3,
+      name: 'Priya Patel',
+      role: 'Product Manager at Meta',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop',
+      feedback: 'Finally, a learning system that focuses on becoming capable rather than accumulating knowledge. The roadmap personalization was incredibly accurate, and I felt genuinely prepared.',
+    },
+    {
+      id: 4,
+      name: 'James Liu',
+      role: 'Machine Learning Engineer at OpenAI',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop',
+      feedback: 'The evaluation system caught subtleties in my work that I would have missed. This continuous feedback loop accelerated my learning exponentially. Best investment in my career.',
+    },
+    {
+      id: 5,
+      name: 'Aisha Mohamed',
+      role: 'Full Stack Developer at Microsoft',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop',
+      feedback: 'Coming from a non-traditional background, I needed proof of capability, not just a degree. Twinstitute gave me that. The confidence I gained from real execution was worth every moment.',
+    },
+    {
+      id: 6,
+      name: 'David Park',
+      role: 'Principal Engineer at Netflix',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1522099124311-d1f47dd3a11a?w=150&h=150&fit=crop',
+      feedback: 'The system understands career progression better than any mentor I\'ve had. It predicted exactly what I needed to work on to reach senior engineer level. Invaluable guidance.',
+    },
+  ]
+
+  const [isHovered, setIsHovered] = useState(false)
+
+  return (
+    <section id="alumni" className="relative py-24 bg-black overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-600/25 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+        {/* Header */}
+        <motion.div
+          className="text-center mb-20"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <h2 className="text-6xl lg:text-7xl font-black text-white leading-tight mb-6 tracking-tight">
+            Hear what our
+            <br />
+            <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Alumni's Say</span>
+          </h2>
+          <p className="text-gray-400 text-lg lg:text-xl font-light max-w-3xl mx-auto">
+            Join thousands of learners who've transformed their capability and accelerated their careers.
+          </p>
+        </motion.div>
+
+        {/* Carousel Container */}
+        <div
+          className="relative"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <motion.div
+            className="flex gap-6 overflow-hidden"
+            animate={{
+              x: isHovered ? 0 : -100 * (testimonials.length + 1),
+            }}
+            transition={{
+              duration: 50,
+              ease: 'linear',
+              repeat: isHovered ? 0 : Infinity,
+            }}
+          >
+            {/* Render testimonials twice for seamless loop */}
+            {[...testimonials, ...testimonials].map((testimonial, idx) => (
+              <motion.div
+                key={`${testimonial.id}-${idx}`}
+                className="flex-shrink-0 w-full sm:w-96 p-8 rounded-2xl border border-gray-800/60 bg-gradient-to-br from-gray-900/40 to-black backdrop-blur-sm hover:border-cyan-400/40 hover:shadow-lg hover:shadow-cyan-500/20 transition-all group cursor-grab active:cursor-grabbing"
+                whileHover={{ y: -8, borderColor: 'rgba(0, 217, 255, 0.6)' }}
+              >
+                {/* Stars */}
+                <div className="flex gap-1 mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <motion.span
+                      key={i}
+                      className="text-yellow-400 text-lg"
+                      initial={{ opacity: 0, scale: 0 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.1 }}
+                      viewport={{ once: true }}
+                    >
+                      ★
+                    </motion.span>
+                  ))}
+                </div>
+
+                {/* Feedback Text */}
+                <p className="text-gray-300 text-sm leading-relaxed mb-6 font-light">
+                  {testimonial.feedback}
+                </p>
+
+                {/* Divider */}
+                <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent mb-6" />
+
+                {/* Profile */}
+                <div className="flex items-center gap-4">
+                  <motion.img
+                    src={testimonial.image}
+                    alt={testimonial.name}
+                    className="w-12 h-12 rounded-full border border-cyan-400/30 object-cover"
+                    whileHover={{ scale: 1.1 }}
+                  />
+                  <div className="flex-1">
+                    <p className="text-white font-bold text-sm bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
+                      {testimonial.name}
+                    </p>
+                    <p className="text-gray-400 text-xs font-light">
+                      {testimonial.role}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </motion.div>
+
+          {/* Gradient Fade Edges */}
+          <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-black to-transparent pointer-events-none z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-black to-transparent pointer-events-none z-10" />
+        </div>
+
+        {/* Hover Indicator */}
+        <motion.div
+          className="text-center mt-8 text-gray-400 text-sm font-light"
+          animate={{ opacity: [0.4, 0.7, 0.4] }}
+          transition={{ duration: 2.5, repeat: Infinity }}
+        >
+          {isHovered ? '⏸ Paused' : '↻ Auto-playing'}
         </motion.div>
       </div>
     </section>

@@ -9,7 +9,7 @@ export default function VerificationSuccessPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push('/auth')
+      router.push('/auth/login')
     }, 3000)
 
     return () => clearTimeout(timer)

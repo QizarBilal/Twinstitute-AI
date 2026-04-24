@@ -55,7 +55,8 @@ export async function GET() {
             submittedAt: true,
             evaluatedAt: true,
             scoreTotal: true,
-            createdAt: true
+            createdAt: true,
+            timeSpentMin: true,
           },
           orderBy: { createdAt: 'asc' }
         }
@@ -97,6 +98,8 @@ export async function GET() {
       if (!activityMap[date]) activityMap[date] = { tasks: 0, time: 0, skills: 0 }
 
       if (sub.status === 'passed' || sub.status === 'completed') activityMap[date].tasks++
+      
+      activityMap[date].time += sub.timeSpentMin || 0
 
       activityMap[date].skills++ // Count as skill engagement
     })
