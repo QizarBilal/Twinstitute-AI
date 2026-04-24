@@ -1,16 +1,17 @@
 /**
  * Advanced ATS Resume Scanner API
- * Comprehensive resume analysis inspired by SkillMatch-AI
+ * Comprehensive resume analysis using Groq AI
  * Analyzes ATS compatibility, job matching, skill gaps, and provides detailed recommendations
+ * Uses GROQ_RESUME_BUILDER_KEY for AI-powered analysis
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { ATSScanResult, ResumeAPIResponse } from '@/types/resume'
+import Groq from 'groq-sdk'
 
-const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-1'
-const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
+const GROQ_API_KEY = process.env.GROQ_RESUME_BUILDER_KEY
 
 interface ATSScanRequest {
   resumeText: string
@@ -60,7 +61,7 @@ function detectJobRole(jobDescription: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -101,8 +102,14 @@ export async function POST(req: NextRequest) {
       baseMatchScore = Math.round(skillMatchRatio * 100 * 0.6 + 75 * 0.4)
     }
 
-    // Call Claude API for comprehensive analysis
-    const claudePrompt = `You are an expert ATS (Applicant Tracking System) analyst and resume optimization specialist working with enterprise recruiting teams.
+    // Use Groq for comprehensive analysis if API key is available
+    let analysis: any = null
+    
+    if (GROQ_API_KEY) {
+      try {
+        const groqClient = new Groq({ apiKey: GROQ_API_KEY })
+        
+        const groqPrompt = `You are an expert ATS (Applicant Tracking System) analyst and resume optimization specialist.
 
 Analyze the following resume${jobDescription ? ' against the provided job description' : ''} and provide detailed ATS analysis:
 
@@ -125,28 +132,20 @@ Provide your analysis in valid JSON format (no markdown, just raw JSON):
     "missingKeywords": [<string>],
     "recommendedAdditions": [<string>]
   },
-  "sections": {
-    "<section_name>": {
-      "present": <boolean>,
-      "quality": <"strong" | "adequate" | "weak">,
-      "suggestion": "<actionable suggestion>"
-    }
-  },
   "jobMatchAnalysis": {
     "targetRole": "<detected job title>",
     "roleMatch": <number 0-100>,
     "skillsMatch": <number 0-100>,
     "experienceMatch": <number 0-100>,
-    "educationRelevance": <number 0-100>,
-    "overallFit": <"strong" | "moderate" | "weak">
+    "educationRelevance": <number 0-100>
   },
   "strengths": [<string>],
   "improvements": [
     {
       "priority": <"critical" | "high" | "medium" | "low">,
-      "issue": "<issue description>",
-      "solution": "<specific solution>",
-      "impact": "<expected improvement>"
+      "issue": "<issue>",
+      "solution": "<solution>",
+      "impact": "<improvement>"
     }
   ],
   "formattingIssues": [<string>],
@@ -156,92 +155,34 @@ Provide your analysis in valid JSON format (no markdown, just raw JSON):
   }
 }
 
-Focus on:
-1. ATS parsing compatibility (format, structure, special characters)
-2. Keyword density and relevance to job (if provided)
-3. Section completeness and organization
-4. Quantified achievements and metrics
-5. Technical terminology precision
-6. Experience duration and progression
-7. Education alignment
-8. Modern resume best practices
+Focus on ATS compatibility, keywords, structure, and job fit.`
 
-Be specific, actionable, and data-driven.`
+        const response = await groqClient.chat.completions.create({
+          model: 'mixtral-8x7b-32768',
+          messages: [
+            {
+              role: 'user',
+              content: groqPrompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+        })
 
-    const response = await fetch(CLAUDE_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_API_KEY || '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: 2500,
-        messages: [
-          {
-            role: 'user',
-            content: claudePrompt,
-          },
-        ],
-      }),
-    })
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('Claude API error:', error)
-
-      // Return partial analysis using local extraction
-      const scanResult: ATSScanResult = {
-        score: baseMatchScore,
-        timestamp: new Date().toISOString(),
-        jobDescription,
-        missingKeywords: missingSkills,
-        foundKeywords: matchedSkills,
-        suggestions: [
-          {
-            priority: 'high',
-            suggestion: 'Use an online resume checker to verify ATS compatibility',
-            section: 'General',
-          },
-        ],
-        formatting: {
-          atsCompatible: true,
-          issues: [],
-          recommendations: ['Consider using standard fonts (Arial, Calibri)', 'Avoid tables and complex formatting'],
-        },
-        readabilityScore: 70,
-        competencyMatch: jobSkills.slice(0, 5).map((skill) => ({
-          skill,
-          resumeLevel: resumeSkills.includes(skill) ? 'verified' : 'weak',
-          jobRequiredLevel: 'intermediate',
-          gap: resumeSkills.includes(skill) ? 'meet' : 'below',
-        })),
+        const analysisText = response.choices[0]?.message?.content || '{}'
+        const jsonMatch = analysisText.match(/\{[\s\S]*\}/)
+        
+        if (jsonMatch) {
+          analysis = JSON.parse(jsonMatch[0])
+        }
+      } catch (groqError) {
+        console.warn('Groq analysis failed, using fallback:', groqError)
       }
-
-      return NextResponse.json(
-        {
-          success: true,
-          data: scanResult,
-          timestamp: new Date().toISOString(),
-        } as ResumeAPIResponse<ATSScanResult>
-      )
     }
 
-    const data = (await response.json()) as any
-    let analysisText = data.content[0]?.text || '{}'
-
-    // Extract JSON from response
-    const jsonMatch = analysisText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error('Could not parse Claude response')
-    }
-
-    const analysis = JSON.parse(jsonMatch[0])
-
-    // Calculate weighted final score
+    // Build final result
     let finalScore = baseMatchScore
-    if (jobDescription && analysis.jobMatchAnalysis) {
+    if (analysis?.jobMatchAnalysis) {
       const weights = {
         skills: 0.4,
         experience: 0.25,
@@ -253,7 +194,7 @@ Be specific, actionable, and data-driven.`
         (analysis.jobMatchAnalysis.skillsMatch || 0) * weights.skills +
           (analysis.jobMatchAnalysis.experienceMatch || 0) * weights.experience +
           (analysis.jobMatchAnalysis.educationRelevance || 0) * weights.education +
-          (analysis.atsScore || analysis.atsCompatibility?.parseability === 'high' ? 85 : 65) * weights.format
+          (analysis.atsScore || 85) * weights.format
       )
     }
 
@@ -261,24 +202,25 @@ Be specific, actionable, and data-driven.`
       score: Math.min(100, Math.max(0, finalScore)),
       timestamp: new Date().toISOString(),
       jobDescription,
-      missingKeywords: analysis.keywordAnalysis?.missingKeywords || missingSkills,
-      foundKeywords: analysis.keywordAnalysis?.matchedKeywords || matchedSkills,
-      suggestions: (analysis.improvements || []).map((imp: any) => ({
+      missingKeywords: analysis?.keywordAnalysis?.missingKeywords || missingSkills,
+      foundKeywords: analysis?.keywordAnalysis?.matchedKeywords || matchedSkills,
+      suggestions: (analysis?.improvements || []).map((imp: any) => ({
         priority: imp.priority,
         suggestion: imp.solution,
         section: 'Resume',
       })),
       formatting: {
-        atsCompatible: analysis.atsCompatibility?.parsing !== 'low',
-        issues: analysis.formattingIssues || [],
+        atsCompatible: analysis?.atsCompatibility?.parsing !== 'low' ?? true,
+        issues: analysis?.formattingIssues || [],
         recommendations: [
-          ...(analysis.recommendations?.shortTerm || []),
+          ...(analysis?.recommendations?.shortTerm || []),
           'Use standard fonts and formatting',
           'Avoid tables, images, and special characters',
+          'Keep clear section headings',
         ],
       },
-      readabilityScore: analysis.atsCompatibility?.readability || 75,
-      competencyMatch: (analysis.keywordAnalysis?.matchedKeywords || []).slice(0, 8).map((skill: string) => ({
+      readabilityScore: analysis?.atsCompatibility?.readability || 75,
+      competencyMatch: (analysis?.keywordAnalysis?.matchedKeywords || matchedSkills || []).slice(0, 8).map((skill: string) => ({
         skill,
         resumeLevel: 'verified',
         jobRequiredLevel: 'intermediate',

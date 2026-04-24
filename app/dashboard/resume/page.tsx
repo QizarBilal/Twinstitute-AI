@@ -15,7 +15,7 @@ import { ResumePreview } from '@/components/resume/ResumePreview'
 import { ATSScannerUI } from '@/components/resume/ATSScannerUI'
 import { SkillsAnalyzerUI } from '@/components/resume/SkillsAnalyzerUI'
 import { ExportOptions } from '@/components/resume/ExportOptions'
-import FileUploadComponent from '@/components/resume/FileUploadComponent'
+import { JDComparisonUI } from '@/components/resume/JDComparisonUI'
 
 type ToolPanel = 'none' | 'ai-generate' | 'ats-scan' | 'skills-match' | 'jd-compare' | 'insights' | 'export'
 type EditSection = 'none' | 'contact' | 'summary' | 'experience' | 'projects' | 'skills' | 'education'
@@ -608,7 +608,10 @@ export default function ResumePage() {
                   />
                 )}
                 {activeToolPanel === 'jd-compare' && (
-                  <FileUploadComponent onAnalyze={(data) => console.log('JD Compare:', data)} />
+                  <JDComparisonUI
+                    resumeContent={generateResumeText(resume)}
+                    targetRole={resume.contact.title}
+                  />
                 )}
                 {activeToolPanel === 'export' && (
                   <ExportOptions
