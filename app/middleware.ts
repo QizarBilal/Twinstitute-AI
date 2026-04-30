@@ -1,23 +1,31 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 export default withAuth(
-  function middleware(req) {
+  function middleware(req: NextRequest) {
     const token = req.nextauth.token
     const path = req.nextUrl.pathname
 
     if (!token) {
+      // Redirect to login if no token
       return NextResponse.redirect(new URL('/auth/login', req.url))
     }
 
-    // Check if user is trying to access dashboard but hasn't completed orientation
-    if (path === '/dashboard' || path.startsWith('/dashboard/')) {
-      // In production, check user.selectedRole in database
-      // For now, this check happens in the dashboard layout
-      // The orientation system will redirect from dashboard if needed
+    // Check if user has completed role selection (orientation)
+    const hasSelectedRole = token.selectedRole
+
+    // If trying to access dashboard without role selected, redirect to orientation
+    if ((path === '/dashboard' || path.startsWith('/dashboard/')) && !hasSelectedRole) {
+      return NextResponse.redirect(new URL('/orientation', req.url))
     }
 
-    // After login, redirect home to dashboard (orientation handled inside)
+    // If on orientation and already has role, redirect to dashboard
+    if (path.startsWith('/orientation') && hasSelectedRole) {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+
+    // After login, redirect home to dashboard
     if (path === '/home') {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }

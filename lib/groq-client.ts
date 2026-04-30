@@ -23,17 +23,22 @@ export interface GroqResponse {
   }
 }
 
+const GROQ_RECRUITER_KEY = process.env.GROQ_RECRUITER_KEY
 const GROQ_API_KEY = process.env.GROQ_API_KEY
+const GROQ_AI_MENTOR_BACKUP_KEY = process.env.GROQ_AI_MENTOR_BACKUP_KEY
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
-// Initialize Groq SDK client
-export const groqClient = GROQ_API_KEY
+// Determine which API key to use (priority order)
+export const SELECTED_GROQ_KEY = GROQ_RECRUITER_KEY || GROQ_API_KEY || GROQ_AI_MENTOR_BACKUP_KEY || ''
+
+// Initialize Groq SDK client when any key is present
+export const groqClient = SELECTED_GROQ_KEY
   ? new Groq({
-      apiKey: GROQ_API_KEY,
+      apiKey: SELECTED_GROQ_KEY,
     })
   : null
 
-console.log('[groq-client] Groq SDK initialized successfully with API key present:', !!GROQ_API_KEY)
+console.log('[groq-client] Groq SDK selected key present:', !!SELECTED_GROQ_KEY)
 
 export async function callGroqAPI(
   messages: GroqMessage[],
@@ -41,17 +46,19 @@ export async function callGroqAPI(
   maxTokens = 1000,
   model = 'llama-3.3-70b-versatile'
 ): Promise<string> {
-  if (!GROQ_API_KEY) {
-    console.warn('[groq-client] GROQ_API_KEY is not set, using fallback mock response')
-    // Return a sensible fallback response
-    return 'This is a demo response. Please configure your GROQ_API_KEY to enable AI features.'
+  // Choose key at call-time as well (in case environment changes)
+  const apiKey = process.env.GROQ_RECRUITER_KEY || process.env.GROQ_API_KEY || process.env.GROQ_AI_MENTOR_BACKUP_KEY
+  if (!apiKey) {
+    console.warn('[groq-client] No GROQ key found (GROQ_RECRUITER_KEY/GROQ_API_KEY/GROQ_AI_MENTOR_BACKUP_KEY), using fallback mock response')
+    // Return a sensible fallback response used by callers (non-JSON friendly demo string)
+    return 'Demo response: GROQ key not configured. Please set GROQ_RECRUITER_KEY or GROQ_API_KEY.'
   }
 
   try {
     const response = await fetch(GROQ_API_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${GROQ_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

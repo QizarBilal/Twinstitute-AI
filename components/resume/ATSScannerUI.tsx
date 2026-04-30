@@ -146,8 +146,8 @@ export function ATSScannerUI({ resume, isScanning, onScan, scanResult }: ATSScan
                 Missing Keywords ({scanResult.missingKeywords.length})
               </h4>
               <div className="flex flex-wrap gap-2">
-                {scanResult.missingKeywords.slice(0, 10).map((keyword) => (
-                  <span key={keyword} className="px-3 py-1 bg-yellow-900/40 border border-yellow-700/50 rounded-full text-sm text-yellow-300">
+                {scanResult.missingKeywords.slice(0, 10).map((keyword, index) => (
+                  <span key={`${keyword}-${index}`} className="px-3 py-1 bg-yellow-900/40 border border-yellow-700/50 rounded-full text-sm text-yellow-300">
                     {keyword}
                   </span>
                 ))}

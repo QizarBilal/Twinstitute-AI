@@ -11,6 +11,7 @@ declare module 'next-auth' {
       accountType: string
       selectedRole?: string
       selectedDomain?: string
+      emailVerified?: boolean
     }
   }
 
@@ -22,6 +23,7 @@ declare module 'next-auth' {
     role: string
     accountType: string
     rememberMe?: boolean
+    provider?: string
   }
 }
 
@@ -33,5 +35,7 @@ declare module 'next-auth/jwt' {
     selectedRole?: string
     selectedDomain?: string
     rememberMe?: boolean
+    emailVerified?: boolean
+    provider?: string
   }
 }

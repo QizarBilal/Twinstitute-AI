@@ -19,6 +19,27 @@ interface ContentGenerationRequest {
   skills: string[];
 }
 
+function buildLocalGeneratedContent(body: ContentGenerationRequest) {
+  const cleanSkills = (body.skills || []).filter(Boolean).slice(0, 8)
+  const skillSentence = cleanSkills.length
+    ? `Core strengths include ${cleanSkills.join(', ')}.`
+    : 'Core strengths include cross-functional collaboration, execution discipline, and measurable delivery.'
+
+  const yearsText = body.yearsExperience > 0 ? `${body.yearsExperience}+ years` : 'hands-on'
+
+  return {
+    summary: `${body.role} with ${yearsText} of experience building high-impact outcomes aligned with ${body.targetPosition}. ${skillSentence} Consistently improves quality, delivery speed, and stakeholder confidence through structured problem solving and clear communication.`,
+    keywords: [
+      body.role,
+      body.targetPosition,
+      ...cleanSkills,
+      'ATS optimized',
+      'impact-driven',
+      'cross-functional',
+    ].filter(Boolean),
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -50,10 +71,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!generated) {
-      return NextResponse.json(
-        { success: false, error: "Failed to generate content" },
-        { status: 500 }
-      );
+      return NextResponse.json({
+        success: true,
+        data: buildLocalGeneratedContent(body),
+        fallback: true,
+      });
     }
 
     return NextResponse.json({
@@ -62,13 +84,18 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error generating content:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to generate content",
-      },
-      { status: 500 }
-    );
+    const body = {
+      role: 'Professional',
+      targetPosition: 'Target Role',
+      yearsExperience: 0,
+      skills: [],
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: buildLocalGeneratedContent(body),
+      fallback: true,
+      error: error instanceof Error ? error.message : 'Failed to generate content',
+    });
   }
 }

@@ -10,13 +10,38 @@ interface ScenarioAdjustments {
   weeklyHours: number
 }
 
+type SimulationTab = 'trajectory' | 'skills' | 'scenarios' | 'insights'
+
+const tabLabels: Record<SimulationTab, string> = {
+    trajectory: 'Trajectory',
+    skills: 'Skills',
+    scenarios: 'Scenarios',
+    insights: 'Insights',
+}
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: { staggerChildren: 0.08, delayChildren: 0.12 },
+    },
+}
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.45 } },
+}
+
+const panelClass = 'bg-gray-900/50 border border-gray-800 rounded-2xl backdrop-blur-sm'
+const pillClass = 'inline-flex items-center rounded-full border border-gray-800 bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400'
+
 export default function SimulationPage() {
   const [adjustments, setAdjustments] = useState<ScenarioAdjustments>({
     consistencyBoost: 0,
     skillFocusLevel: 0,
     weeklyHours: 0,
   })
-  const [activeTab, setActiveTab] = useState<'trajectory' | 'skills' | 'scenarios' | 'insights'>('trajectory')
+    const [activeTab, setActiveTab] = useState<SimulationTab>('trajectory')
 
   // Fetch required data
   const { data: twinData, loading: twinLoading } = useDataFetch('/api/user/twin')
@@ -71,7 +96,7 @@ export default function SimulationPage() {
 
         const riskLevel = riskFactors.length >= 2 ? 'elevated' : 'normal'
 
-        return {
+                return {
           baseScore,
           consistency,
           avgScore,
@@ -88,21 +113,26 @@ export default function SimulationPage() {
           tasksCompleted: labsData.completedCount || 12,
           industryReadiness: Math.min(100, Math.max(30, (twinData.industryReadiness || 58))),
           institutionFit: twinData.institutionFit || 88,
-          tasksTotal: labsData.totalAttempts || 32,
+                    tasksTotal: labsData.totalAttempts || 32,
         }
     }, [twinData, genomeData, performanceData, labsData, adjustments])
 
     // Loading state
     if (twinLoading || genomeLoading || perfLoading || !simulationData) {
         return (
-            <div className="min-h-screen space-y-8">
-                <div className="h-12 bg-slate-800/50 rounded-2xl animate-pulse" />
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="h-40 bg-slate-800/50 rounded-2xl animate-pulse" />
-                    ))}
+            <div className="min-h-screen bg-black px-6 py-8 text-white">
+                <div className="mx-auto max-w-7xl space-y-6">
+                    <div className="h-44 rounded-3xl border border-gray-800 bg-gray-950/70 animate-pulse" />
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="h-36 rounded-2xl border border-gray-800 bg-gray-950/70 animate-pulse" />
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                        <div className="h-[540px] rounded-3xl border border-gray-800 bg-gray-950/70 animate-pulse lg:col-span-8" />
+                        <div className="h-[540px] rounded-3xl border border-gray-800 bg-gray-950/70 animate-pulse lg:col-span-4" />
+                    </div>
                 </div>
-                <div className="h-96 bg-slate-800/50 rounded-2xl animate-pulse" />
             </div>
         )
     }
@@ -116,606 +146,339 @@ export default function SimulationPage() {
                           'text-amber-400'
 
     return (
-        <div className="min-h-screen pb-16 space-y-8">
-            {/* Hero Section */}
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-            >
-                <div>
-                    <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 mb-3">
-                        Career Trajectory Simulator
-                    </h1>
-                    <p className="text-slate-400 text-lg max-w-2xl">
-                        Visualize your professional growth path and discover how your learning decisions impact your job readiness and placement opportunities
-                    </p>
-                </div>
+        <motion.div
+            className="min-h-screen bg-black px-6 py-8 text-white"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <div className="mx-auto max-w-7xl space-y-8">
+                {/* Hero Section */}
+                <motion.section variants={itemVariants} className="relative overflow-hidden rounded-[2rem] border border-gray-800 bg-gray-950/80 p-8 shadow-2xl shadow-black/40">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.12),transparent_28%)]" />
+                    <div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+                        <div className="space-y-5">
+                            <span className={pillClass}>Simulation Labs</span>
+                            <div className="space-y-3">
+                                <h1 className="text-4xl font-bold tracking-tight text-white md:text-5xl">
+                                    Capability Simulation Labs
+                                </h1>
+                                <p className="max-w-2xl text-sm leading-7 text-gray-400 md:text-base">
+                                    Explore how your capability score, learning velocity, and weekly commitment shape your job readiness. This page turns your roadmap into an interactive lab for planning, tradeoffs, and outcome simulation.
+                                </p>
+                            </div>
 
-                {/* Key Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Current Readiness */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.05 }}
-                        className="group bg-gradient-to-br from-slate-900/80 to-slate-800/30 border border-slate-700/50 rounded-2xl p-6 backdrop-blur hover:border-cyan-500/30 transition-all"
-                    >
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Current Readiness</span>
-                            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
-                                <span className="text-cyan-400 text-sm">â†’</span>
+                            <div className="flex flex-wrap gap-3">
+                                <div className="rounded-full border border-gray-800 bg-black/40 px-4 py-2 text-xs text-gray-300">Role: {simulationData.targetRole}</div>
+                                <div className="rounded-full border border-gray-800 bg-black/40 px-4 py-2 text-xs text-gray-300">Readiness: {simulationData.projectedReadiness}%</div>
+                                <div className="rounded-full border border-gray-800 bg-black/40 px-4 py-2 text-xs text-gray-300">Weeks to ready: {simulationData.weeksToReady}</div>
                             </div>
                         </div>
-                        <div className="text-4xl font-bold text-cyan-400 mb-2">{simulationData.currentReadiness}%</div>
-                        <div className="w-full bg-slate-900/70 rounded-full h-2 overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${simulationData.currentReadiness}%` }}
-                                transition={{ duration: 1.2, ease: 'easeOut' }}
-                                className="h-full bg-gradient-to-r from-cyan-500 to-blue-400"
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500 mt-3">Based on current performance</p>
-                    </motion.div>
 
-                    {/* Projected Readiness */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="group bg-gradient-to-br from-slate-900/80 to-slate-800/30 border border-slate-700/50 rounded-2xl p-6 backdrop-blur hover:border-emerald-500/30 transition-all"
-                    >
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Projected Readiness</span>
-                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-                                <span className="text-emerald-400 text-sm">â†‘</span>
-                            </div>
-                        </div>
-                        <div className={`text-4xl font-bold mb-2 ${readinessColor}`}>{simulationData.projectedReadiness}%</div>
-                        <div className="w-full bg-slate-900/70 rounded-full h-2 overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${simulationData.projectedReadiness}%` }}
-                                transition={{ duration: 1.4, ease: 'easeOut', delay: 0.2 }}
-                                className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400"
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500 mt-3">With scenario adjustments</p>
-                    </motion.div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <motion.div variants={itemVariants} className={`${panelClass} p-5`}>
+                                <div className="text-[11px] uppercase tracking-[0.22em] text-gray-500">Current Readiness</div>
+                                <div className="mt-3 text-4xl font-bold text-blue-400">{simulationData.currentReadiness}%</div>
+                                <div className="mt-4 h-2 rounded-full bg-black/60 overflow-hidden">
+                                    <motion.div className="h-full bg-gradient-to-r from-blue-600 to-cyan-400" initial={{ width: 0 }} animate={{ width: `${simulationData.currentReadiness}%` }} transition={{ duration: 1.1 }} />
+                                </div>
+                            </motion.div>
 
-                    {/* Placement Probability */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15 }}
-                        className="group bg-gradient-to-br from-slate-900/80 to-slate-800/30 border border-slate-700/50 rounded-2xl p-6 backdrop-blur hover:border-blue-500/30 transition-all"
-                    >
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Placement Probability</span>
-                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
-                                <span className="text-blue-400 text-sm">âœ“</span>
-                            </div>
-                        </div>
-                        <div className={`text-4xl font-bold mb-2 ${placementColor}`}>{simulationData.placementProbability}%</div>
-                        <div className="w-full bg-slate-900/70 rounded-full h-2 overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${simulationData.placementProbability}%` }}
-                                transition={{ duration: 1.3, ease: 'easeOut', delay: 0.3 }}
-                                className="h-full bg-gradient-to-r from-blue-500 to-cyan-400"
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500 mt-3">Success likelihood</p>
-                    </motion.div>
+                            <motion.div variants={itemVariants} className={`${panelClass} p-5`}>
+                                <div className="text-[11px] uppercase tracking-[0.22em] text-gray-500">Projected Readiness</div>
+                                <div className="mt-3 text-4xl font-bold text-purple-400">{simulationData.projectedReadiness}%</div>
+                                <div className="mt-4 h-2 rounded-full bg-black/60 overflow-hidden">
+                                    <motion.div className="h-full bg-gradient-to-r from-purple-600 to-blue-500" initial={{ width: 0 }} animate={{ width: `${simulationData.projectedReadiness}%` }} transition={{ duration: 1.1 }} />
+                                </div>
+                            </motion.div>
 
-                    {/* Timeline to Ready */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="group bg-gradient-to-br from-slate-900/80 to-slate-800/30 border border-slate-700/50 rounded-2xl p-6 backdrop-blur hover:border-amber-500/30 transition-all"
-                    >
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Job-Ready Timeline</span>
-                            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
-                                <span className="text-amber-400 text-sm">â±</span>
-                            </div>
+                            <motion.div variants={itemVariants} className={`${panelClass} p-5`}>
+                                <div className="text-[11px] uppercase tracking-[0.22em] text-gray-500">Placement Probability</div>
+                                <div className="mt-3 text-4xl font-bold text-cyan-400">{simulationData.placementProbability}%</div>
+                                <div className="mt-4 h-2 rounded-full bg-black/60 overflow-hidden">
+                                    <motion.div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500" initial={{ width: 0 }} animate={{ width: `${simulationData.placementProbability}%` }} transition={{ duration: 1.1 }} />
+                                </div>
+                            </motion.div>
+
+                            <motion.div variants={itemVariants} className={`${panelClass} p-5`}>
+                                <div className="text-[11px] uppercase tracking-[0.22em] text-gray-500">Weeks to Ready</div>
+                                <div className="mt-3 text-4xl font-bold text-amber-400">{simulationData.weeksToReady}</div>
+                                <p className="mt-4 text-xs text-gray-500">Targeting 75% readiness</p>
+                            </motion.div>
                         </div>
-                        <div className="text-4xl font-bold text-amber-400 mb-2">{simulationData.weeksToReady}</div>
-                        <p className="text-xs text-slate-500 mb-2">weeks</p>
-                        <p className="text-xs text-slate-600">Target: 75% readiness</p>
-                    </motion.div>
-                </div>
-            </motion.div>
+                    </div>
+                </motion.section>
 
-            {/* Tab Navigation */}
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                className="flex gap-1 bg-slate-900/30 border border-slate-700/30 rounded-xl p-1 backdrop-blur w-fit"
-            >
-                {(['trajectory', 'skills', 'scenarios', 'insights'] as const).map((tab, idx) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                            activeTab === tab
-                                ? 'bg-gradient-to-r from-blue-500 to-cyan-400 text-black shadow-lg shadow-blue-500/25'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                        }`}
-                    >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </button>
-                ))}
-            </motion.div>
+                {/* Tab Navigation */}
+                <motion.div variants={itemVariants} className="inline-flex rounded-full border border-gray-800 bg-gray-950/70 p-1">
+                    {(Object.keys(tabLabels) as SimulationTab[]).map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`rounded-full px-5 py-2 text-sm font-semibold transition-all ${
+                                activeTab === tab
+                                    ? 'bg-white text-black shadow-lg'
+                                    : 'text-gray-400 hover:bg-gray-900 hover:text-white'
+                            }`}
+                        >
+                            {tabLabels[tab]}
+                        </button>
+                    ))}
+                </motion.div>
 
-            {/* Tab Content */}
-            <AnimatePresence mode="wait">
-                {/* Trajectory Tab */}
-                {activeTab === 'trajectory' && (
-                    <motion.div
-                        key="trajectory"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="space-y-6"
-                    >
-                        {/* Main Chart Area */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className="lg:col-span-2 bg-gradient-to-br from-slate-900/80 to-slate-800/40 border border-slate-700/50 rounded-2xl p-8 backdrop-blur">
-                                <h3 className="text-2xl font-bold text-white mb-1">Growth Trajectory</h3>
-                                <p className="text-slate-400 text-sm mb-8">Your predicted readiness evolution</p>
-                                
-                                <div className="space-y-8">
-                                    {/* Week 0 - Current */}
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-24 text-right">
-                                            <div className="text-sm text-slate-400">Now</div>
-                                            <div className="text-2xl font-bold text-cyan-400">Week 0</div>
+                {/* Tab Content */}
+                <AnimatePresence mode="wait">
+                    {activeTab === 'trajectory' && (
+                        <motion.div
+                            key="trajectory"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="grid grid-cols-1 gap-6 lg:grid-cols-12"
+                        >
+                            <div className={`${panelClass} p-6 lg:col-span-8`}>
+                                <div className="mb-6 flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-white">Trajectory Overview</h2>
+                                        <p className="mt-1 text-sm text-gray-500">How your capability signals combine into placement readiness</p>
+                                    </div>
+                                    <span className={pillClass}>Live simulation</span>
+                                </div>
+
+                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                    {[
+                                        { label: 'Base Score', value: simulationData.baseScore, tone: 'text-blue-400' },
+                                        { label: 'Avg Score', value: simulationData.avgScore, tone: 'text-cyan-400' },
+                                        { label: 'Learning Velocity', value: simulationData.velocity.toFixed(1), tone: 'text-purple-400' },
+                                        { label: 'Completion Rate', value: `${simulationData.completionRate}%`, tone: 'text-emerald-400' },
+                                    ].map((item) => (
+                                        <div key={item.label} className="rounded-2xl border border-gray-800 bg-black/30 p-4">
+                                            <div className="text-[11px] uppercase tracking-[0.2em] text-gray-500">{item.label}</div>
+                                            <div className={`mt-3 text-3xl font-bold ${item.tone}`}>{item.value}</div>
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="bg-slate-800/50 rounded-full h-4 overflow-hidden border border-slate-700/50">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${simulationData.currentReadiness}%` }}
-                                                    transition={{ duration: 1, ease: 'easeOut' }}
-                                                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-400"
-                                                />
+                                    ))}
+                                </div>
+
+                                <div className="mt-6 rounded-2xl border border-gray-800 bg-black/30 p-5">
+                                    <div className="mb-4 text-sm font-semibold text-gray-300">Journey to readiness</div>
+                                    <div className="grid gap-4 md:grid-cols-3">
+                                        {[
+                                            { title: 'Current', value: simulationData.currentReadiness, tone: 'from-blue-600 to-cyan-400' },
+                                            { title: 'Projected', value: simulationData.projectedReadiness, tone: 'from-purple-600 to-blue-500' },
+                                            { title: 'Placement', value: simulationData.placementProbability, tone: 'from-cyan-500 to-emerald-400' },
+                                        ].map((stage) => (
+                                            <div key={stage.title} className="rounded-xl border border-gray-800 bg-gray-950/60 p-4">
+                                                <div className="flex items-center justify-between text-xs uppercase tracking-[0.18em] text-gray-500">
+                                                    <span>{stage.title}</span>
+                                                    <span>{stage.value}%</span>
+                                                </div>
+                                                <div className="mt-3 h-2 rounded-full bg-black/60 overflow-hidden">
+                                                    <div className={`h-full bg-gradient-to-r ${stage.tone}`} style={{ width: `${stage.value}%` }} />
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="text-sm font-semibold text-slate-300">{simulationData.currentReadiness}%</div>
-                                    </div>
-
-                                    {/* Mid Point */}
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-24 text-right">
-                                            <div className="text-sm text-slate-400">Midpoint</div>
-                                            <div className="text-2xl font-bold text-blue-400">Week {Math.floor(simulationData.weeksToReady / 2)}</div>
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="bg-slate-800/50 rounded-full h-4 overflow-hidden border border-slate-700/50">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${Math.min(100, simulationData.currentReadiness + ((simulationData.projectedReadiness - simulationData.currentReadiness) / 2))}%` }}
-                                                    transition={{ duration: 1.1, ease: 'easeOut', delay: 0.3 }}
-                                                    className="h-full bg-gradient-to-r from-blue-500 to-cyan-400"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="text-sm font-semibold text-slate-300">{Math.round(simulationData.currentReadiness + ((simulationData.projectedReadiness - simulationData.currentReadiness) / 2))}%</div>
-                                    </div>
-
-                                    {/* Target - Job Ready */}
-                                    <div className="flex items-center gap-4 pb-4 border-b border-slate-700/50">
-                                        <div className="w-24 text-right">
-                                            <div className="text-sm text-slate-400">Job-Ready</div>
-                                            <div className={`text-2xl font-bold ${readinessColor}`}>Week {simulationData.weeksToReady}</div>
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="bg-slate-800/50 rounded-full h-4 overflow-hidden border border-slate-700/50">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${Math.min(100, 75)}%` }}
-                                                    transition={{ duration: 1.2, ease: 'easeOut', delay: 0.5 }}
-                                                    className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="text-sm font-semibold text-slate-300">75%</div>
-                                    </div>
-
-                                    {/* Final Target */}
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-24 text-right">
-                                            <div className="text-sm text-slate-400">Peak</div>
-                                            <div className={`text-2xl font-bold ${readinessColor}`}>Week {Math.ceil(simulationData.weeksToReady * 1.3)}</div>
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="bg-slate-800/50 rounded-full h-4 overflow-hidden border border-slate-700/50">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${simulationData.projectedReadiness}%` }}
-                                                    transition={{ duration: 1.3, ease: 'easeOut', delay: 0.7 }}
-                                                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="text-sm font-semibold text-slate-300">{simulationData.projectedReadiness}%</div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Right Sidebar - Key Metrics */}
-                            <div className="space-y-4">
-                                {/* Learning Velocity */}
-                                <div className="bg-gradient-to-br from-blue-900/20 to-slate-900/40 border border-blue-500/20 rounded-2xl p-6 backdrop-blur">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-xs font-semibold text-slate-400 uppercase">Learning Velocity</span>
-                                        <div className="text-blue-400 text-lg">â†—</div>
-                                    </div>
-                                    <div className="text-3xl font-bold text-blue-400">{simulationData.velocity.toFixed(2)}</div>
-                                    <p className="text-xs text-slate-500 mt-2">points per week</p>
+                            <div className={`${panelClass} p-6 lg:col-span-4`}>
+                                <h2 className="text-xl font-bold text-white">Risk Signals</h2>
+                                <p className="mt-1 text-sm text-gray-500">Potential blockers to readiness</p>
+
+                                <div className="mt-6 space-y-3">
+                                    {simulationData.riskFactors.length > 0 ? simulationData.riskFactors.map((risk) => (
+                                        <div key={risk} className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 text-sm text-red-200">
+                                            {risk}
+                                        </div>
+                                    )) : (
+                                        <div className="rounded-xl border border-emerald-900/40 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-200">
+                                            No major risk factors detected.
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Consistency Score */}
-                                <div className="bg-gradient-to-br from-emerald-900/20 to-slate-900/40 border border-emerald-500/20 rounded-2xl p-6 backdrop-blur">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-xs font-semibold text-slate-400 uppercase">Consistency</span>
-                                        <div className="text-emerald-400 text-lg">âœ“</div>
-                                    </div>
-                                    <div className="text-3xl font-bold text-emerald-400">{simulationData.consistency}%</div>
-                                    <p className="text-xs text-slate-500 mt-2">Performance stability</p>
-                                </div>
-
-                                {/* Average Score */}
-                                <div className="bg-gradient-to-br from-amber-900/20 to-slate-900/40 border border-amber-500/20 rounded-2xl p-6 backdrop-blur">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-xs font-semibold text-slate-400 uppercase">Avg Score</span>
-                                        <div className="text-amber-400 text-lg">â­</div>
-                                    </div>
-                                    <div className="text-3xl font-bold text-amber-400">{simulationData.avgScore.toFixed(0)}</div>
-                                    <p className="text-xs text-slate-500 mt-2">Typical submission</p>
-                                </div>
-
-                                {/* Target Role */}
-                                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-600/50 rounded-2xl p-6 backdrop-blur">
-                                    <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Target Role</div>
-                                    <div className="text-lg font-bold text-slate-200">{simulationData.targetRole}</div>
-                                    <div className="text-xs text-slate-500 mt-2">Industry demand: High</div>
+                                <div className="mt-6 rounded-2xl border border-gray-800 bg-black/30 p-5">
+                                    <div className="text-[11px] uppercase tracking-[0.2em] text-gray-500">Institution Fit</div>
+                                    <div className="mt-3 text-4xl font-bold text-white">{simulationData.institutionFit}%</div>
+                                    <p className="mt-2 text-xs text-gray-500">Alignment with your current institution profile</p>
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
+                    )}
 
-                        {/* Adjustments Section */}
-                        <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/40 border border-slate-700/50 rounded-2xl p-8 backdrop-blur">
-                            <h4 className="text-xl font-bold text-white mb-6">Scenario Adjustments</h4>
-                            <p className="text-slate-400 text-sm mb-6">Fine-tune your learning plan to see impact on readiness</p>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {/* Consistency Boost */}
-                                <div className="space-y-3">
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-slate-300 font-medium">Consistency Boost</span>
-                                        <span className="text-blue-400 font-bold">{adjustments.consistencyBoost}%</span>
-                                    </label>
-                                    <input
-                                        type="range"
-                                        min={0}
-                                        max={25}
-                                        value={adjustments.consistencyBoost}
-                                        onChange={(e) => setAdjustments({...adjustments, consistencyBoost: parseFloat(e.target.value)})}
-                                        className="w-full h-2 bg-slate-800 rounded-full appearance-none cursor-pointer accent-blue-500"
-                                    />
-                                    <p className="text-xs text-slate-500">Improve engagement consistency</p>
+                    {activeTab === 'skills' && (
+                        <motion.div
+                            key="skills"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="rounded-[2rem] border border-gray-800 bg-gray-950/80 p-6"
+                        >
+                            <div className="mb-6 flex items-end justify-between gap-4">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white">Skill Development Matrix</h3>
+                                    <p className="mt-1 text-sm text-gray-500">Your current strengths and the gap to target performance</p>
                                 </div>
-
-                                {/* Skill Focus */}
-                                <div className="space-y-3">
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-slate-300 font-medium">Skill Focus Level</span>
-                                        <span className="text-emerald-400 font-bold">{adjustments.skillFocusLevel}</span>
-                                    </label>
-                                    <input
-                                        type="range"
-                                        min={0}
-                                        max={10}
-                                        value={adjustments.skillFocusLevel}
-                                        onChange={(e) => setAdjustments({...adjustments, skillFocusLevel: parseFloat(e.target.value)})}
-                                        className="w-full h-2 bg-slate-800 rounded-full appearance-none cursor-pointer accent-emerald-500"
-                                    />
-                                    <p className="text-xs text-slate-500">Intensity of skill development</p>
-                                </div>
-
-                                {/* Weekly Hours */}
-                                <div className="space-y-3">
-                                    <label className="flex items-center justify-between">
-                                        <span className="text-slate-300 font-medium">Weekly Hours</span>
-                                        <span className="text-amber-400 font-bold">{adjustments.weeklyHours}</span>
-                                    </label>
-                                    <input
-                                        type="range"
-                                        min={0}
-                                        max={15}
-                                        value={adjustments.weeklyHours}
-                                        onChange={(e) => setAdjustments({...adjustments, weeklyHours: parseFloat(e.target.value)})}
-                                        className="w-full h-2 bg-slate-800 rounded-full appearance-none cursor-pointer accent-amber-500"
-                                    />
-                                    <p className="text-xs text-slate-500">Dedicated learning time</p>
-                                </div>
+                                <span className={pillClass}>10 focus skills</span>
                             </div>
-                        </div>
-                    </motion.div>
-                )}
 
-                {/* Skills Tab */}
-                {activeTab === 'skills' && (
-                    <motion.div
-                        key="skills"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="bg-gradient-to-br from-slate-900/80 to-slate-800/40 border border-slate-700/50 rounded-2xl p-8 backdrop-blur"
-                    >
-                        <h3 className="text-2xl font-bold text-white mb-2">Skill Development Matrix</h3>
-                        <p className="text-slate-400 text-sm mb-8">Your technical capabilities and growth trajectory</p>
-                        
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {simulationData.skills.map((skill, idx) => (
-                                <motion.div
-                                    key={skill.name}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                    className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-5 hover:border-slate-600/50 transition-all"
-                                >
-                                    <div className="flex items-center justify-between mb-4">
-                                        <span className="text-slate-200 font-semibold">{skill.name}</span>
-                                        <span className={`text-xs px-3 py-1 rounded-full ${skill.trend === 'up' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700/50 text-slate-400'}`}>
-                                            {skill.trend === 'up' ? 'â†— Trending' : 'â†’ Stable'}
-                                        </span>
-                                    </div>
-                                    <div className="space-y-2 mb-3">
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-slate-400">Current</span>
-                                            <span className={`font-semibold ${skill.proficiency >= 80 ? 'text-emerald-400' : skill.proficiency >= 60 ? 'text-blue-400' : 'text-amber-400'}`}>
-                                                {skill.proficiency.toFixed(0)}%
+                            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                                {simulationData.skills.map((skill, idx) => (
+                                    <motion.div
+                                        key={skill.name}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: idx * 0.05 }}
+                                        className="rounded-2xl border border-gray-800 bg-black/35 p-5"
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <div className="text-lg font-semibold text-white">{skill.name}</div>
+                                                <div className="text-xs text-gray-500">Target {skill.target}% · {skill.category}</div>
+                                            </div>
+                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${skill.trend === 'up' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-gray-800 text-gray-400'}`}>
+                                                {skill.trend === 'up' ? 'Trending up' : 'Stable'}
                                             </span>
                                         </div>
-                                        <div className="w-full bg-slate-900/70 rounded-full h-2 overflow-hidden">
+                                        <div className="mt-4 h-2 rounded-full bg-black/60 overflow-hidden">
                                             <motion.div
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${skill.proficiency}%` }}
-                                                transition={{ duration: 1, ease: 'easeOut', delay: 0.3 + idx * 0.05 }}
-                                                className={`h-full ${skill.proficiency >= 80 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : skill.proficiency >= 60 ? 'bg-gradient-to-r from-blue-500 to-cyan-400' : 'bg-gradient-to-r from-amber-500 to-orange-400'}`}
+                                                transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 + idx * 0.04 }}
+                                                className={`h-full ${skill.proficiency >= 80 ? 'bg-gradient-to-r from-emerald-500 to-cyan-400' : skill.proficiency >= 60 ? 'bg-gradient-to-r from-blue-500 to-cyan-400' : 'bg-gradient-to-r from-amber-500 to-orange-400'}`}
                                             />
                                         </div>
-                                    </div>
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-slate-600">Target: {skill.target}%</span>
-                                        <span className="text-slate-500">{skill.category}</span>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Scenarios Tab */}
-                {activeTab === 'scenarios' && (
-                    <motion.div
-                        key="scenarios"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="space-y-6"
-                    >
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {[
-                                {
-                                    name: 'Baseline',
-                                    description: 'Continue current pace',
-                                    readiness: simulationData.currentReadiness,
-                                    weeks: simulationData.weeksToReady + 8,
-                                    placement: Math.max(30, simulationData.placementProbability - 15),
-                                    color: 'from-slate-500 to-slate-600'
-                                },
-                                {
-                                    name: 'Focused Growth',
-                                    description: 'Increase effort and consistency',
-                                    readiness: simulationData.projectedReadiness,
-                                    weeks: simulationData.weeksToReady,
-                                    placement: simulationData.placementProbability,
-                                    color: 'from-blue-500 to-cyan-500',
-                                    recommended: true
-                                },
-                                {
-                                    name: 'Acceleration',
-                                    description: 'Intensive learning mode',
-                                    readiness: Math.min(100, simulationData.projectedReadiness + 12),
-                                    weeks: Math.max(2, simulationData.weeksToReady - 4),
-                                    placement: Math.min(96, simulationData.placementProbability + 12),
-                                    color: 'from-emerald-500 to-teal-500'
-                                },
-                            ].map((scenario, idx) => (
-                                <motion.div
-                                    key={scenario.name}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.1 }}
-                                    className={`relative bg-gradient-to-br from-slate-900/80 to-slate-800/40 border-2 rounded-2xl p-6 backdrop-blur transition-all cursor-pointer group hover:border-opacity-100 ${
-                                        scenario.recommended ? 'border-blue-500/80 ring-2 ring-blue-500/20' : 'border-slate-700/50 hover:border-slate-600/80'
-                                    }`}
-                                >
-                                    {scenario.recommended && (
-                                        <div className="absolute top-4 right-4 bg-gradient-to-r from-blue-500 to-cyan-400 text-black text-xs font-bold px-3 py-1 rounded-full">
-                                            RECOMMENDED
+                                        <div className="mt-3 flex items-center justify-between text-sm">
+                                            <span className="text-gray-500">Current</span>
+                                            <span className={`font-bold ${skill.proficiency >= 80 ? 'text-emerald-400' : skill.proficiency >= 60 ? 'text-blue-400' : 'text-amber-400'}`}>
+                                                {skill.proficiency.toFixed(0)}%
+                                            </span>
                                         </div>
-                                    )}
-                                    
-                                    <h4 className="text-xl font-bold text-white mb-2">{scenario.name}</h4>
-                                    <p className="text-slate-400 text-sm mb-6">{scenario.description}</p>
-                                    
-                                    <div className="space-y-4 mb-6">
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'scenarios' && (
+                        <motion.div
+                            key="scenarios"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="rounded-[2rem] border border-gray-800 bg-gray-950/80 p-6"
+                        >
+                            <div className="mb-6 flex items-end justify-between gap-4">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white">Scenario Planning</h3>
+                                    <p className="mt-1 text-sm text-gray-500">Compare learning intensity against placement outcomes</p>
+                                </div>
+                                <span className={pillClass}>3 plans</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                                {[
+                                    { name: 'Baseline', description: 'Maintain current pace', readiness: simulationData.currentReadiness, weeks: simulationData.weeksToReady + 8, placement: Math.max(30, simulationData.placementProbability - 15), accent: 'from-gray-500 to-gray-600' },
+                                    { name: 'Focused Growth', description: 'Structured improvement with consistency', readiness: simulationData.projectedReadiness, weeks: simulationData.weeksToReady, placement: simulationData.placementProbability, accent: 'from-blue-500 to-cyan-400', featured: true },
+                                    { name: 'Acceleration', description: 'High-intensity learning mode', readiness: Math.min(100, simulationData.projectedReadiness + 12), weeks: Math.max(2, simulationData.weeksToReady - 4), placement: Math.min(96, simulationData.placementProbability + 12), accent: 'from-emerald-500 to-teal-400' },
+                                ].map((scenario, idx) => (
+                                    <motion.div
+                                        key={scenario.name}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: idx * 0.08 }}
+                                        className={`relative rounded-2xl border p-6 ${scenario.featured ? 'border-blue-500/40 bg-blue-500/5' : 'border-gray-800 bg-black/35'}`}
+                                    >
+                                        {scenario.featured && <span className="absolute right-4 top-4 rounded-full bg-white px-3 py-1 text-[10px] font-bold uppercase text-black">Recommended</span>}
+                                        <h4 className="text-xl font-bold text-white">{scenario.name}</h4>
+                                        <p className="mt-1 text-sm text-gray-500">{scenario.description}</p>
+                                        <div className="mt-6 space-y-4">
+                                            <div>
+                                                <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-gray-500">
+                                                    <span>Projected readiness</span>
+                                                    <span>{scenario.readiness}%</span>
+                                                </div>
+                                                <div className="mt-3 h-2 rounded-full bg-black/60 overflow-hidden">
+                                                    <motion.div initial={{ width: 0 }} animate={{ width: `${scenario.readiness}%` }} transition={{ duration: 0.9, delay: 0.2 + idx * 0.08 }} className={`h-full bg-gradient-to-r ${scenario.accent}`} />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="rounded-xl border border-gray-800 bg-black/30 p-3">
+                                                    <div className="text-[11px] uppercase tracking-[0.2em] text-gray-500">Timeline</div>
+                                                    <div className="mt-2 text-2xl font-bold text-white">{scenario.weeks}w</div>
+                                                </div>
+                                                <div className="rounded-xl border border-gray-800 bg-black/30 p-3">
+                                                    <div className="text-[11px] uppercase tracking-[0.2em] text-gray-500">Success</div>
+                                                    <div className="mt-2 text-2xl font-bold text-white">{scenario.placement}%</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'insights' && (
+                        <motion.div
+                            key="insights"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="space-y-6"
+                        >
+                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                                <div className="rounded-[2rem] border border-gray-800 bg-gray-950/80 p-6 lg:col-span-7">
+                                    <div className="flex items-center justify-between gap-4">
                                         <div>
-                                            <div className="flex justify-between mb-2">
-                                                <span className="text-slate-400 text-sm">Projected Readiness</span>
-                                                <span className="text-slate-200 font-bold">{scenario.readiness}%</span>
-                                            </div>
-                                            <div className="w-full bg-slate-900/70 rounded-full h-3 overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${scenario.readiness}%` }}
-                                                    transition={{ duration: 1, ease: 'easeOut', delay: 0.5 + idx * 0.2 }}
-                                                    className={`h-full bg-gradient-to-r ${scenario.color}`}
-                                                />
-                                            </div>
+                                            <h3 className="text-2xl font-bold text-white">Risk Assessment</h3>
+                                            <p className="mt-1 text-sm text-gray-500">Primary blockers that could slow placement readiness</p>
                                         </div>
-                                        
-                                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700/50">
-                                            <div>
-                                                <div className="text-slate-500 text-xs mb-1">Timeline</div>
-                                                <div className="text-2xl font-bold text-slate-200">{scenario.weeks}w</div>
-                                            </div>
-                                            <div>
-                                                <div className="text-slate-500 text-xs mb-1">Success Rate</div>
-                                                <div className="text-2xl font-bold text-slate-200">{scenario.placement}%</div>
-                                            </div>
+                                        <div className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] ${simulationData.riskLevel === 'elevated' ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}`}>
+                                            {simulationData.riskLevel}
                                         </div>
                                     </div>
-                                    
-                                    <button className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                                        scenario.recommended
-                                            ? 'bg-gradient-to-r from-blue-500 to-cyan-400 text-black hover:shadow-lg hover:shadow-blue-500/25'
-                                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                                    }`}>
-                                        {scenario.recommended ? 'Activate Plan' : 'Explore'}
-                                    </button>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
 
-                {/* Insights Tab */}
-                {activeTab === 'insights' && (
-                    <motion.div
-                        key="insights"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="space-y-6"
-                    >
-                        {/* Risk Assessment */}
-                        <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/40 border border-slate-700/50 rounded-2xl p-8 backdrop-blur">
-                            <div className="flex items-center justify-between mb-6">
-                                <h4 className="text-2xl font-bold text-white">Risk Assessment</h4>
-                                <div className={`text-sm font-bold px-4 py-2 rounded-lg ${
-                                    simulationData.riskLevel === 'elevated' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
-                                }`}>
-                                    {simulationData.riskLevel.toUpperCase()}
-                                </div>
-                            </div>
-
-                            {simulationData.riskFactors.length > 0 ? (
-                                <div className="space-y-3">
-                                    {simulationData.riskFactors.map((factor, idx) => (
-                                        <motion.div
-                                            key={idx}
-                                            initial={{ opacity: 0, x: -10 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: idx * 0.1 }}
-                                            className="flex items-start gap-3 p-4 bg-slate-800/50 rounded-lg border border-amber-500/20"
-                                        >
-                                            <div className="text-amber-400 text-lg mt-1">âš </div>
-                                            <div>
-                                                <p className="text-slate-200 font-medium">{factor}</p>
-                                                <p className="text-slate-500 text-sm mt-1">Focus on this area to improve outcomes</p>
+                                    <div className="mt-6 space-y-3">
+                                        {simulationData.riskFactors.length > 0 ? simulationData.riskFactors.map((factor) => (
+                                            <div key={factor} className="rounded-xl border border-amber-900/40 bg-amber-950/15 px-4 py-3 text-sm text-amber-100">
+                                                {factor}
                                             </div>
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-3 p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
-                                    <div className="text-emerald-400 text-lg">âœ“</div>
-                                    <p className="text-emerald-300 font-medium">All metrics are within healthy ranges</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Key Recommendations */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {[
-                                {
-                                    title: 'Boost Learning Velocity',
-                                    description: 'Increase weekly study hours and focus depth',
-                                    impact: '+8% readiness',
-                                    icon: 'âš¡'
-                                },
-                                {
-                                    title: 'Improve Consistency',
-                                    description: 'Build regular submission habits and reduce gaps',
-                                    impact: '+12% placement chance',
-                                    icon: 'âœ“'
-                                },
-                                {
-                                    title: 'Expand Skill Portfolio',
-                                    description: 'Target 8-10 core skills for competitive advantage',
-                                    impact: '+15% market value',
-                                    icon: 'ðŸŽ¯'
-                                },
-                                {
-                                    title: 'Practice Mock Interviews',
-                                    description: 'Prepare for recruiter conversations early',
-                                    impact: '+20% confidence',
-                                    icon: 'ðŸ’¬'
-                                },
-                            ].map((rec, idx) => (
-                                <motion.div
-                                    key={idx}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.1 }}
-                                    className="bg-gradient-to-br from-slate-900/80 to-slate-800/40 border border-slate-700/50 rounded-xl p-6 hover:border-blue-500/30 transition-all group"
-                                >
-                                    <div className="flex items-start justify-between mb-4">
-                                        <h5 className="text-lg font-bold text-slate-200 group-hover:text-white transition-colors">{rec.title}</h5>
-                                        <span className="text-2xl">{rec.icon}</span>
+                                        )) : (
+                                            <div className="rounded-xl border border-emerald-900/40 bg-emerald-950/15 px-4 py-3 text-sm text-emerald-100">
+                                                All metrics are currently in a healthy range.
+                                            </div>
+                                        )}
                                     </div>
-                                    <p className="text-slate-400 text-sm mb-4">{rec.description}</p>
-                                    <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
-                                        <span className="text-xs text-slate-500">Estimated Impact</span>
-                                        <span className="text-sm font-bold text-blue-400">{rec.impact}</span>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
+                                </div>
 
-                        {/* Progress Summary */}
-                        <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/40 border border-slate-700/50 rounded-2xl p-8 backdrop-blur">
-                            <h4 className="text-2xl font-bold text-white mb-6">Progress Summary</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="text-center">
-                                    <div className="text-4xl font-bold text-blue-400 mb-2">{simulationData.tasksCompleted}</div>
-                                    <p className="text-slate-400">Tasks Completed</p>
-                                    <p className="text-xs text-slate-600 mt-1">{simulationData.tasksTotal} total available</p>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-4xl font-bold text-emerald-400 mb-2">{simulationData.institutionFit}%</div>
-                                    <p className="text-slate-400">Institution Fit</p>
-                                    <p className="text-xs text-slate-600 mt-1">Program compatibility</p>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-4xl font-bold text-amber-400 mb-2">{simulationData.industryReadiness}%</div>
-                                    <p className="text-slate-400">Industry Readiness</p>
-                                    <p className="text-xs text-slate-600 mt-1">Market competitiveness</p>
+                                <div className="rounded-[2rem] border border-gray-800 bg-gray-950/80 p-6 lg:col-span-5">
+                                    <h3 className="text-2xl font-bold text-white">Progress Summary</h3>
+                                    <p className="mt-1 text-sm text-gray-500">Snapshot of your simulation outcomes</p>
+
+                                    <div className="mt-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                                        {[
+                                            { label: 'Tasks completed', value: simulationData.tasksCompleted, tone: 'text-blue-400' },
+                                            { label: 'Institution fit', value: `${simulationData.institutionFit}%`, tone: 'text-emerald-400' },
+                                            { label: 'Industry readiness', value: `${simulationData.industryReadiness}%`, tone: 'text-amber-400' },
+                                        ].map((item) => (
+                                            <div key={item.label} className="rounded-2xl border border-gray-800 bg-black/35 p-4 text-center sm:text-left">
+                                                <div className="text-[11px] uppercase tracking-[0.2em] text-gray-500">{item.label}</div>
+                                                <div className={`mt-2 text-3xl font-bold ${item.tone}`}>{item.value}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-6 rounded-2xl border border-gray-800 bg-black/35 p-5">
+                                        <div className="text-[11px] uppercase tracking-[0.2em] text-gray-500">Next best action</div>
+                                        <div className="mt-2 text-lg font-semibold text-white">Increase weekly consistency by 10-15% and revisit the scenario simulator after your next lab cycle.</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </motion.div>
     )
 }

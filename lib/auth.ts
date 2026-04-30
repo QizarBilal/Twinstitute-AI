@@ -110,10 +110,11 @@ export const authOptions: NextAuthOptions = {
       }
       return true
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
         token.rememberMe = user.rememberMe || false
+        token.provider = account?.provider
       }
       
       // Refresh user state from database
@@ -121,16 +122,20 @@ export const authOptions: NextAuthOptions = {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { 
+            fullName: true,
             accountType: true,
             selectedRole: true,
             selectedDomain: true,
+            emailVerified: true,
           },
         })
 
         if (dbUser) {
+          token.name = dbUser.fullName || token.name
           token.accountType = dbUser.accountType
           token.selectedRole = dbUser.selectedRole
           token.selectedDomain = dbUser.selectedDomain
+          token.emailVerified = dbUser.emailVerified
         }
       }
       return token
@@ -138,10 +143,11 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string
+        session.user.name = token.name as string
         session.user.accountType = token.accountType as string
-        // Add role and domain info to session for client-side decision making
         session.user.selectedRole = token.selectedRole as string
         session.user.selectedDomain = token.selectedDomain as string
+        session.user.emailVerified = token.emailVerified as boolean
         
         // Extend session expiration if Remember Me is checked
         if (token.rememberMe) {
@@ -150,6 +156,12 @@ export const authOptions: NextAuthOptions = {
         }
       }
       return session
+    },
+    async redirect({ url, baseUrl }) {
+      // Ensure redirects are only to valid URLs
+      if (url.startsWith('/')) return `${baseUrl}${url}`
+      else if (new URL(url).origin === baseUrl) return url
+      return baseUrl + '/dashboard'
     },
   },
   secret: process.env.NEXTAUTH_SECRET,

@@ -7,8 +7,8 @@ import {
   Settings, ChevronRight, ChevronDown, Sparkles, Search,
   X, Plus, Minus, ZoomIn, ZoomOut, LayoutTemplate,
   Save, Eye, User, Briefcase, GraduationCap, Code2,
-  Award, Target, PanelRight, Pencil, Check, RefreshCw,
-  Globe, Mail, Phone, MapPin, Link, Github
+  Award, Target, PanelRight, Pencil, Check, RefreshCw, Wand2,
+  Globe, Mail, Phone, MapPin, Link, Github, Trophy
 } from 'lucide-react'
 import { ResumeData, ResumeTemplate, ATSScanResult, SkillsAnalysisResult, ExportFormat } from '@/types/resume'
 import { ResumePreview } from '@/components/resume/ResumePreview'
@@ -16,16 +16,30 @@ import { ATSScannerUI } from '@/components/resume/ATSScannerUI'
 import { SkillsAnalyzerUI } from '@/components/resume/SkillsAnalyzerUI'
 import { ExportOptions } from '@/components/resume/ExportOptions'
 import { JDComparisonUI } from '@/components/resume/JDComparisonUI'
+import { TemplateSelector } from '@/components/resume/TemplateSelector'
+import { ResumeSectionCustomizer } from '@/components/resume/ResumeSectionCustomizer'
+import { ResumeSectionEditor } from '@/components/resume/ResumeSectionEditor'
+import { ResumeAIGeneratorPanel } from '@/components/resume/ResumeAIGeneratorPanel'
 
-type ToolPanel = 'none' | 'ai-generate' | 'ats-scan' | 'skills-match' | 'jd-compare' | 'insights' | 'export'
-type EditSection = 'none' | 'contact' | 'summary' | 'experience' | 'projects' | 'skills' | 'education'
+type ToolPanel = 'none' | 'ai-generate' | 'template-select' | 'section-config' | 'ats-scan' | 'skills-match' | 'jd-compare' | 'export'
+type EditSection = 'none' | 'contact' | 'summary' | 'experience' | 'projects' | 'skills' | 'education' | 'certifications' | 'languages' | 'achievements'
 
 const TEMPLATES: { id: ResumeTemplate; name: string; tag: string; color: string }[] = [
-  { id: 'modern-ats', name: 'Modern ATS', tag: 'Recommended', color: '#06b6d4' },
-  { id: 'professional-classic', name: 'Professional', tag: 'Corporate', color: '#6366f1' },
-  { id: 'creative-tech', name: 'Creative Tech', tag: 'Design', color: '#f59e0b' },
-  { id: 'academic', name: 'Academic', tag: 'Research', color: '#10b981' },
-  { id: 'startup', name: 'Startup', tag: 'Minimal', color: '#ec4899' },
+  { id: 'modern-ats', name: 'Modern ATS', tag: '1-Column, Clean', color: '#06b6d4' },
+  { id: 'classic-corporate', name: 'Classic Corporate', tag: '1-Column, Serif', color: '#6366f1' },
+  { id: 'tech-focused', name: 'Tech Focused', tag: '2-Column, Sidebar', color: '#10b981' },
+  { id: 'academic', name: 'Academic', tag: '1-Column, Education', color: '#8b5cf6' },
+  { id: 'startup', name: 'Startup', tag: '1-Column, Creative', color: '#ec4899' },
+  { id: 'executive-premium', name: 'Executive Premium', tag: '3-Part Layout', color: '#059669' },
+  { id: 'minimal-edge', name: 'Minimal Edge', tag: '1-Column, Whitespace', color: '#78716c' },
+  { id: 'compact-professional', name: 'Compact Pro', tag: '1-Page Optimized', color: '#1e40af' },
+  { id: 'technical-specialist', name: 'Technical Specialist', tag: '2-Column, Monospace', color: '#16a34a' },
+  { id: 'consulting-elite', name: 'Consulting Elite', tag: 'Metrics-Focused', color: '#0369a1' },
+  { id: 'creative-designer', name: 'Creative Designer', tag: 'Image Section', color: '#d946ef' },
+  { id: 'sales-professional', name: 'Sales Pro', tag: 'Achievement Badges', color: '#15803d' },
+  { id: 'researcher', name: 'Researcher', tag: 'Publication-Focused', color: '#6d28d9' },
+  { id: 'career-changer', name: 'Career Changer', tag: '2-Column, Skills-First', color: '#ea580c' },
+  { id: 'startup-founder', name: 'Startup Founder', tag: 'Vision + Metrics', color: '#0891b2' },
 ]
 
 export default function ResumePage() {
@@ -39,6 +53,19 @@ export default function ResumePage() {
   const [zoom, setZoom] = useState(85)
   const [isSaving, setIsSaving] = useState(false)
   const [savedOk, setSavedOk] = useState(false)
+
+  // Section visibility state
+  const [enabledSections, setEnabledSections] = useState({
+    contact: true,
+    summary: true,
+    experience: true,
+    projects: true,
+    skills: true,
+    education: true,
+    certifications: false,
+    languages: false,
+    achievements: false,
+  })
 
   // ATS / Skills state
   const [isATSScanning, setIsATSScanning] = useState(false)
@@ -61,16 +88,20 @@ export default function ResumePage() {
         const response = await fetch('/api/resume/fetch-data')
         const data = await response.json()
         if (!data.success) throw new Error(data.error || 'Failed to fetch resume data')
+        
+        // Initialize with fresh data - only system experience/education, no auto-generated projects
         const resumeData: ResumeData = {
           userId: 'current-user',
           templateId: 'modern-ats',
           contact: data.data.contact,
           skills: data.data.skills || [],
           capabilities: data.data.capabilities || [],
-          projects: data.data.projects || [],
+          projects: [], // Start with empty projects - user adds manually
           experience: data.data.experience || [],
           education: data.data.education || [],
           certifications: [],
+          achievements: [],
+          languages: [],
           lastUpdated: new Date().toISOString(),
           createdAt: new Date().toISOString(),
         }
@@ -150,11 +181,23 @@ export default function ResumePage() {
   }
 
   const handleSave = async () => {
-    setIsSaving(true)
-    await new Promise(r => setTimeout(r, 800))
-    setIsSaving(false)
-    setSavedOk(true)
-    setTimeout(() => setSavedOk(false), 2200)
+    if (!resume) return
+    try {
+      setIsSaving(true)
+      const response = await fetch('/api/resume/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(resume),
+      })
+      const data = await response.json()
+      if (!data.success) throw new Error(data.error || 'Failed to save resume')
+      setSavedOk(true)
+      setTimeout(() => setSavedOk(false), 2200)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save resume')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const toggleToolPanel = (panel: ToolPanel) => {
@@ -263,7 +306,7 @@ export default function ResumePage() {
 
         {/* Template selector pill */}
         <button
-          onClick={() => setShowTemplateModal(true)}
+          onClick={() => toggleToolPanel('template-select')}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:border-white/20"
           style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
         >
@@ -294,6 +337,15 @@ export default function ResumePage() {
           style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(6,182,212,0.15))', border: '1px solid rgba(99,102,241,0.4)', color: '#a5b4fc' }}
         >
           <Sparkles className="w-3.5 h-3.5" />
+          AI Generate
+        </button>
+
+        <button
+          onClick={() => openEditSection('summary')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 transition-all hover:scale-105"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+        >
+          <Wand2 className="w-3.5 h-3.5" />
           AI Enhance
         </button>
 
@@ -339,6 +391,9 @@ export default function ResumePage() {
                 { id: 'projects' as EditSection, icon: Code2, label: 'Projects', count: resume.projects.length },
                 { id: 'skills' as EditSection, icon: Award, label: 'Skills', count: resume.skills.length },
                 { id: 'education' as EditSection, icon: GraduationCap, label: 'Education', count: resume.education.length },
+                { id: 'certifications' as EditSection, icon: Award, label: 'Certifications', count: resume.certifications.length },
+                { id: 'languages' as EditSection, icon: Globe, label: 'Languages', count: resume.languages?.length ?? 0 },
+                { id: 'achievements' as EditSection, icon: Trophy, label: 'Achievements', count: resume.achievements.length },
               ].map(item => {
                 const Icon = item.icon
                 const isActive = activeEditSection === item.id
@@ -365,6 +420,43 @@ export default function ResumePage() {
                         {item.count}
                       </span>
                     )}
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                  </motion.button>
+                )
+              })}
+            </nav>
+          </div>
+
+          <div className="mx-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }} />
+
+          {/* Resume Design */}
+          <div className="p-4">
+            <SectionHeader label="Resume Design" />
+            <nav className="space-y-1 mt-2">
+              {[
+                { id: 'template-select' as ToolPanel, icon: LayoutTemplate, label: 'Templates', color: '#06b6d4' },
+                { id: 'section-config' as ToolPanel, icon: Settings, label: 'Sections', color: '#8b5cf6' },
+              ].map(item => {
+                const Icon = item.icon
+                const isActive = activeToolPanel === item.id
+                return (
+                  <motion.button
+                    key={item.id}
+                    onClick={() => toggleToolPanel(item.id)}
+                    whileHover={{ x: 2 }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
+                    style={{
+                      background: isActive ? `${item.color}15` : 'transparent',
+                      border: isActive ? `1px solid ${item.color}35` : '1px solid transparent',
+                    }}
+                  >
+                    <div
+                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: isActive ? `${item.color}25` : 'rgba(255,255,255,0.06)' }}
+                    >
+                      <Icon className="w-3.5 h-3.5" style={{ color: isActive ? item.color : '#94a3b8' }} />
+                    </div>
+                    <span className="flex-1 text-sm font-medium" style={{ color: isActive ? '#e2e8f0' : '#94a3b8' }}>{item.label}</span>
                     <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
                   </motion.button>
                 )
@@ -489,7 +581,7 @@ export default function ResumePage() {
               </button>
               <div className="w-px h-4 bg-white/10 mx-1" />
               <button
-                onClick={() => setShowTemplateModal(true)}
+                onClick={() => toggleToolPanel('template-select')}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/10 transition-all"
               >
                 <LayoutTemplate className="w-3.5 h-3.5" />
@@ -507,10 +599,18 @@ export default function ResumePage() {
               className="shrink-0"
             >
               <div
-                className="bg-white rounded-xl shadow-2xl overflow-hidden"
-                style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08)' }}
+                className="bg-white rounded-xl shadow-2xl overflow-visible"
+                style={{ 
+                  boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08)',
+                  width: '794px',
+                }}
               >
-                <ResumePreview resume={resume} template={selectedTemplate} />
+                <ResumePreview 
+                  resume={resume} 
+                  template={selectedTemplate}
+                  enabledSections={enabledSections}
+                  pageSize="a4"
+                />
               </div>
             </motion.div>
           </div>
@@ -545,8 +645,8 @@ export default function ResumePage() {
                 </button>
               </div>
               <div className="flex-1 p-5 overflow-y-auto">
-                <EditPanelContent
-                  section={activeEditSection}
+                <ResumeSectionEditor
+                  section={activeEditSection as 'contact' | 'summary' | 'experience' | 'education' | 'skills' | 'projects' | 'certifications' | 'languages' | 'achievements'}
                   resume={resume}
                   onChange={(updated) => setResume(updated)}
                 />
@@ -574,6 +674,8 @@ export default function ResumePage() {
               <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
                 <h3 className="text-sm font-bold text-white">
                   {activeToolPanel === 'ai-generate' && 'AI Content Generator'}
+                  {activeToolPanel === 'template-select' && 'Choose Template'}
+                  {activeToolPanel === 'section-config' && 'Customize Sections'}
                   {activeToolPanel === 'ats-scan' && 'ATS Compatibility Scan'}
                   {activeToolPanel === 'skills-match' && 'Skills Match Analysis'}
                   {activeToolPanel === 'jd-compare' && 'Job Description Compare'}
@@ -588,7 +690,32 @@ export default function ResumePage() {
               </div>
               <div className="flex-1 p-5 overflow-y-auto">
                 {activeToolPanel === 'ai-generate' && (
-                  <FileUploadComponent onAnalyze={(data) => console.log('Analysis:', data)} />
+                  <ResumeAIGeneratorPanel
+                    resume={resume}
+                    onApplySummary={(summary) => {
+                      setResume({
+                        ...resume,
+                        summary,
+                      })
+                    }}
+                  />
+                )}
+                {activeToolPanel === 'template-select' && (
+                  <TemplateSelector
+                    selectedTemplate={selectedTemplate}
+                    onTemplateChange={setSelectedTemplate}
+                  />
+                )}
+                {activeToolPanel === 'section-config' && resume && (
+                  <ResumeSectionCustomizer
+                    enabledSections={enabledSections}
+                    onSectionToggle={(section, enabled) => {
+                      setEnabledSections(prev => ({
+                        ...prev,
+                        [section]: enabled
+                      }))
+                    }}
+                  />
                 )}
                 {activeToolPanel === 'ats-scan' && (
                   <ATSScannerUI
@@ -721,9 +848,9 @@ function SectionHeader({ label }: { label: string }) {
 /** Minimal mock SVG preview of each template style */
 function TemplateMockPreview({ color, id }: { color: string; id: ResumeTemplate }) {
   const isAcademic = id === 'academic'
-  const isCreative = id === 'creative-tech'
+  const isCreative = id === 'startup' || id === 'creative-designer'
   const isStartup = id === 'startup'
-  const isTwoCol = id === 'professional-classic'
+  const isTwoCol = id === 'tech-focused' || id === 'technical-specialist' || id === 'career-changer'
 
   return (
     <svg viewBox="0 0 160 120" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">

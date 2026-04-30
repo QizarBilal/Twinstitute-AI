@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ReCAPTCHA from 'react-google-recaptcha'
 import SecureInput from '@/components/auth/SecureInput'
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton'
 import { validateEmail } from '@/lib/validation'
 
 export default function LoginPage() {
@@ -131,6 +132,16 @@ export default function LoginPage() {
             <p className="text-sm text-gray-500">
               Access Digital Capability Institution enrollment and training systems
             </p>
+          </div>
+
+          {/* Google OAuth Button */}
+          <GoogleLoginButton variant="secondary" />
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-900" />
+            <span className="text-xs text-gray-600 font-medium">OR</span>
+            <div className="flex-1 h-px bg-gray-900" />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">

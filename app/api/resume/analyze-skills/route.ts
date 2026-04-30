@@ -1,19 +1,190 @@
 /**
  * Skills Analysis API
- * Uses Claude to analyze and suggest skill improvements
+ * OpenRouter-first with Groq fallback and deterministic local fallback.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import Groq from 'groq-sdk'
 import { SkillsAnalysisResult, ResumeAPIResponse } from '@/types/resume'
 
-const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-1'
-const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
+const OPENROUTER_API_KEY = process.env.Open_Router_AI_Mentor_Key
+const OPENROUTER_MODEL = process.env.OPENROUTER_RESUME_MODEL || 'openai/gpt-4o-mini'
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const GROQ_API_KEY = process.env.GROQ_RESUME_BUILDER_KEY
+const GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'] as const
 
 interface SkillsAnalysisRequest {
   skills: Array<{ name: string; level: 'verified' | 'developing' | 'weak'; strength: number }>
   targetRole?: string
+}
+
+function buildLocalSkillsAnalysis(
+  skills: SkillsAnalysisRequest['skills'],
+  targetRole?: string
+): SkillsAnalysisResult {
+  const skillsByLevel = {
+    verified: skills.filter((s) => s.level === 'verified').length,
+    developing: skills.filter((s) => s.level === 'developing').length,
+    weak: skills.filter((s) => s.level === 'weak').length,
+  }
+
+  const topSkills = [...skills]
+    .sort((a, b) => b.strength - a.strength)
+    .slice(0, 8)
+    .map((s) => ({
+      name: s.name,
+      level: s.level,
+      strength: s.strength,
+    }))
+
+  const total = skills.length
+  const benchmark = 12
+  const recommendations: string[] = []
+
+  if (skillsByLevel.verified < 5) {
+    recommendations.push('Increase depth in your strongest skills and convert developing skills to verified.')
+  }
+  if (skillsByLevel.weak > 0) {
+    recommendations.push('Prioritize 2-3 weak skills that are most relevant to your target role.')
+  }
+  if (total < benchmark) {
+    recommendations.push('Add role-specific tools and frameworks to match current market expectations.')
+  }
+  if (recommendations.length === 0) {
+    recommendations.push('Your profile is balanced. Keep adding measurable proof for top skills in projects and experience.')
+  }
+
+  return {
+    timestamp: new Date().toISOString(),
+    totalSkills: total,
+    byLevel: skillsByLevel,
+    topSkills,
+    skillGaps: [
+      {
+        category: targetRole || 'Target Role',
+        currentLevel: skillsByLevel.verified >= 5 ? 'proficient' : 'developing',
+        recommendedLevel: 'expert',
+        suggestions: [
+          'Align top skills with target job descriptions.',
+          'Use ATS keywords in summary and experience bullets.',
+          'Show quantified outcomes for key skills.',
+        ],
+      },
+    ],
+    industryBenchmark: {
+      averageSkillsForRole: benchmark,
+      yourSkillCount: total,
+      comparison:
+        total >= benchmark
+          ? 'Your skill count is competitive for the market.'
+          : 'Add more role-relevant skills to improve competitiveness.',
+    },
+    recommendations,
+  }
+}
+
+function mapAiAnalysisToResult(aiAnalysis: any, localResult: SkillsAnalysisResult): SkillsAnalysisResult {
+  return {
+    ...localResult,
+    topSkills: (aiAnalysis?.topSkills || localResult.topSkills).map((s: any) => ({
+      name: s.name || 'Skill',
+      level: s.level || 'developing',
+      strength: typeof s.strength === 'number' ? s.strength : 0.6,
+    })),
+    skillGaps: aiAnalysis?.skillGaps || localResult.skillGaps,
+    industryBenchmark: {
+      averageSkillsForRole:
+        aiAnalysis?.industryBenchmark?.recommendedSkillCount ||
+        localResult.industryBenchmark.averageSkillsForRole,
+      yourSkillCount: localResult.industryBenchmark.yourSkillCount,
+      comparison: localResult.industryBenchmark.comparison,
+    },
+    recommendations: aiAnalysis?.recommendations || localResult.recommendations,
+  }
+}
+
+function extractJsonObject(text: string): any | null {
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) {
+    return null
+  }
+
+  try {
+    return JSON.parse(jsonMatch[0])
+  } catch {
+    return null
+  }
+}
+
+async function runOpenRouterSkillsAnalysis(prompt: string): Promise<any | null> {
+  if (!OPENROUTER_API_KEY) {
+    return null
+  }
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        max_tokens: 1400,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = (await response.json()) as any
+    const analysisText = data?.choices?.[0]?.message?.content || '{}'
+    return extractJsonObject(analysisText)
+  } catch {
+    return null
+  }
+}
+
+async function runGroqSkillsAnalysis(prompt: string): Promise<any | null> {
+  if (!GROQ_API_KEY) {
+    return null
+  }
+
+  const groqClient = new Groq({ apiKey: GROQ_API_KEY })
+
+  for (const model of GROQ_MODELS) {
+    try {
+      const response = await groqClient.chat.completions.create({
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 1400,
+      })
+
+      const analysisText = response.choices?.[0]?.message?.content || '{}'
+      const parsed = extractJsonObject(analysisText)
+      if (parsed) {
+        return parsed
+      }
+    } catch {
+      continue
+    }
+  }
+
+  return null
 }
 
 export async function POST(req: NextRequest) {
@@ -44,142 +215,50 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Prepare skills summary
-    const skillsByLevel = {
-      verified: skills.filter((s) => s.level === 'verified').length,
-      developing: skills.filter((s) => s.level === 'developing').length,
-      weak: skills.filter((s) => s.level === 'weak').length,
-    }
+    const localResult = buildLocalSkillsAnalysis(skills, targetRole)
+    const skillsList = skills
+      .map((s) => `- ${s.name} (${s.level}, strength: ${(s.strength * 100).toFixed(0)}%)`)
+      .join('\n')
 
-    const topSkills = skills.sort((a, b) => b.strength - a.strength).slice(0, 5)
-    const skillsList = skills.map((s) => `- ${s.name} (${s.level}, strength: ${(s.strength * 100).toFixed(0)}%)`).join('\n')
+    const analysisPrompt = `You are an expert career coach and skills analyst. Analyze this skills profile and return JSON only.
 
-    // Call Claude API for analysis
-    const claudePrompt = `You are an expert career coach and skills analyst. Analyze the following skills profile and provide detailed insights and recommendations.
-
-SKILLS PROFILE:
-${skillsList}
-
+SKILLS PROFILE:\n${skillsList}
 TARGET ROLE: ${targetRole || 'Not specified'}
 
-Skills Summary:
-- Verified Skills (70%+ proficiency): ${skillsByLevel.verified}
-- Developing Skills (40-69% proficiency): ${skillsByLevel.developing}
-- Weak Skills (<40% proficiency): ${skillsByLevel.weak}
-- Total Skills: ${skills.length}
-
-Provide your analysis in JSON format:
+JSON schema:
 {
-  "skillsCount": ${skills.length},
-  "topSkills": [
-    {
-      "name": "<skill>",
-      "level": "verified | developing | weak",
-      "strength": <0-1>,
-      "importance": "critical | high | medium"
-    }
-  ],
-  "skillGaps": [
-    {
-      "category": "<category>",
-      "currentLevel": "<minimal | developing | proficient>",
-      "recommendedLevel": "<developing | proficient | expert>",
-      "suggestions": ["<suggestion1>", "<suggestion2>"]
-    }
-  ],
-  "strengths": ["<strength1>", "<strength2>"],
-  "areasForGrowth": ["<area1>", "<area2>"],
-  "industryBenchmark": {
-    "roleTitle": "${targetRole || 'Software Engineer'}",
-    "recommendedSkillCount": <number>,
-    "recommendation": "<brief recommendation>"
-  },
-  "recommendations": [
-    "<priority recommendation 1>",
-    "<priority recommendation 2>"
-  ]
-}
+  "topSkills": [{"name": "", "level": "verified|developing|weak", "strength": 0.0}],
+  "skillGaps": [{"category": "", "currentLevel": "", "recommendedLevel": "", "suggestions": [""]}],
+  "industryBenchmark": {"recommendedSkillCount": 12},
+  "recommendations": [""]
+}`
 
-Consider:
-1. Skill balance and diversity
-2. Technical depth vs breadth
-3. Industry relevance (especially for ${targetRole || 'tech roles'})
-4. Skill progression and development potential
-5. Complementary skills that would enhance the profile
-6. Market demand for the target role
-
-Be specific and actionable.`;
-
-    const response = await fetch(CLAUDE_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_API_KEY || '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: 2000,
-        messages: [
-          {
-            role: 'user',
-            content: claudePrompt,
-          },
-        ],
-      }),
-    })
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('Claude API error:', error)
-      throw new Error(`Claude API error: ${response.status}`)
+    const openRouterAnalysis = await runOpenRouterSkillsAnalysis(analysisPrompt)
+    if (openRouterAnalysis) {
+      return NextResponse.json(
+        {
+          success: true,
+          data: mapAiAnalysisToResult(openRouterAnalysis, localResult),
+          timestamp: new Date().toISOString(),
+        } as ResumeAPIResponse<SkillsAnalysisResult>
+      )
     }
 
-    const data = (await response.json()) as any
-    let analysisText = data.content[0]?.text || '{}'
-
-    // Extract JSON from response
-    const jsonMatch = analysisText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error('Could not parse Claude response')
-    }
-
-    const analysis = JSON.parse(jsonMatch[0])
-
-    const result: SkillsAnalysisResult = {
-      timestamp: new Date().toISOString(),
-      totalSkills: skills.length,
-      byLevel: skillsByLevel,
-      topSkills: (analysis.topSkills || topSkills).map((s: any) => ({
-        name: s.name || s,
-        level: s.level || 'verified',
-        strength: s.strength || 0.8,
-      })),
-      skillGaps: (analysis.skillGaps || []).map((g: any) => ({
-        category: g.category,
-        currentLevel: g.currentLevel,
-        recommendedLevel: g.recommendedLevel,
-        suggestions: g.suggestions || [],
-      })),
-      industryBenchmark: {
-        averageSkillsForRole: analysis.industryBenchmark?.recommendedSkillCount || 12,
-        yourSkillCount: skills.length,
-        comparison:
-          skills.length >= 12
-            ? 'Your skill count is competitive for the market'
-            : 'Consider developing additional skills for competitive advantage',
-      },
-      recommendations: analysis.recommendations || [
-        'Focus on deepening expertise in your top 3 skills',
-        'Develop complementary technical skills in your domain',
-        'Document and demonstrate your proven capabilities',
-      ],
+    const groqAnalysis = await runGroqSkillsAnalysis(analysisPrompt)
+    if (groqAnalysis) {
+      return NextResponse.json(
+        {
+          success: true,
+          data: mapAiAnalysisToResult(groqAnalysis, localResult),
+          timestamp: new Date().toISOString(),
+        } as ResumeAPIResponse<SkillsAnalysisResult>
+      )
     }
 
     return NextResponse.json(
       {
         success: true,
-        data: result,
+        data: localResult,
         timestamp: new Date().toISOString(),
       } as ResumeAPIResponse<SkillsAnalysisResult>
     )

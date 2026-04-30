@@ -1,8 +1,8 @@
 /**
  * Advanced ATS Resume Scanner API
- * Comprehensive resume analysis using Groq AI
+ * Comprehensive resume analysis using OpenRouter with Groq fallback
  * Analyzes ATS compatibility, job matching, skill gaps, and provides detailed recommendations
- * Uses GROQ_RESUME_BUILDER_KEY for AI-powered analysis
+ * Uses Open_Router_AI_Mentor_Key as primary and GROQ_RESUME_BUILDER_KEY as fallback
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -12,10 +12,92 @@ import { ATSScanResult, ResumeAPIResponse } from '@/types/resume'
 import Groq from 'groq-sdk'
 
 const GROQ_API_KEY = process.env.GROQ_RESUME_BUILDER_KEY
+const OPENROUTER_API_KEY = process.env.Open_Router_AI_Mentor_Key
+const OPENROUTER_MODEL = process.env.OPENROUTER_RESUME_MODEL || 'openai/gpt-4o-mini'
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'] as const
 
 interface ATSScanRequest {
   resumeText: string
   jobDescription?: string
+}
+
+function extractJsonObject(text: string): any | null {
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) {
+    return null
+  }
+
+  try {
+    return JSON.parse(jsonMatch[0])
+  } catch {
+    return null
+  }
+}
+
+async function runOpenRouterATSAnalysis(prompt: string): Promise<any | null> {
+  if (!OPENROUTER_API_KEY) {
+    return null
+  }
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = (await response.json()) as any
+    const analysisText = data?.choices?.[0]?.message?.content || '{}'
+    return extractJsonObject(analysisText)
+  } catch {
+    return null
+  }
+}
+
+async function runGroqATSAnalysis(prompt: string): Promise<any | null> {
+  if (!GROQ_API_KEY) {
+    return null
+  }
+
+  const groqClient = new Groq({ apiKey: GROQ_API_KEY })
+
+  for (const model of GROQ_MODELS) {
+    try {
+      const response = await groqClient.chat.completions.create({
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      })
+
+      const analysisText = response.choices[0]?.message?.content || '{}'
+      const parsed = extractJsonObject(analysisText)
+      if (parsed) {
+        return parsed
+      }
+    } catch {
+      continue
+    }
+  }
+
+  return null
 }
 
 // Helper: Extract skills from text
@@ -102,14 +184,10 @@ export async function POST(req: NextRequest) {
       baseMatchScore = Math.round(skillMatchRatio * 100 * 0.6 + 75 * 0.4)
     }
 
-    // Use Groq for comprehensive analysis if API key is available
+    // Use OpenRouter first, then Groq, then local deterministic analysis
     let analysis: any = null
-    
-    if (GROQ_API_KEY) {
-      try {
-        const groqClient = new Groq({ apiKey: GROQ_API_KEY })
-        
-        const groqPrompt = `You are an expert ATS (Applicant Tracking System) analyst and resume optimization specialist.
+
+    const analysisPrompt = `You are an expert ATS (Applicant Tracking System) analyst and resume optimization specialist.
 
 Analyze the following resume${jobDescription ? ' against the provided job description' : ''} and provide detailed ATS analysis:
 
@@ -157,27 +235,9 @@ Provide your analysis in valid JSON format (no markdown, just raw JSON):
 
 Focus on ATS compatibility, keywords, structure, and job fit.`
 
-        const response = await groqClient.chat.completions.create({
-          model: 'mixtral-8x7b-32768',
-          messages: [
-            {
-              role: 'user',
-              content: groqPrompt,
-            },
-          ],
-          temperature: 0.7,
-          max_tokens: 2000,
-        })
-
-        const analysisText = response.choices[0]?.message?.content || '{}'
-        const jsonMatch = analysisText.match(/\{[\s\S]*\}/)
-        
-        if (jsonMatch) {
-          analysis = JSON.parse(jsonMatch[0])
-        }
-      } catch (groqError) {
-        console.warn('Groq analysis failed, using fallback:', groqError)
-      }
+    analysis = await runOpenRouterATSAnalysis(analysisPrompt)
+    if (!analysis) {
+      analysis = await runGroqATSAnalysis(analysisPrompt)
     }
 
     // Build final result

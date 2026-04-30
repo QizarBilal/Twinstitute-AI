@@ -1,7 +1,7 @@
 /**
  * RESUME AI AGENT
  * AI-powered resume building, optimization, and ATS enhancement
- * Uses GROQ_RESUME_BUILDER_KEY for content generation
+ * Uses OpenRouter as primary provider and GROQ_RESUME_BUILDER_KEY as fallback
  * 
  * Features:
  * - AI-powered content generation (HR/ATS-friendly)
@@ -12,6 +12,11 @@
  */
 
 import Groq from "groq-sdk";
+
+const OPENROUTER_API_KEY = process.env.Open_Router_AI_Mentor_Key;
+const OPENROUTER_MODEL = process.env.OPENROUTER_RESUME_MODEL || "openai/gpt-4o-mini";
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const GROQ_MODELS = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"] as const;
 
 export interface ResumeEnhancementRequest {
   section: "summary" | "experience" | "skills" | "education" | "projects";
@@ -75,6 +80,105 @@ function getResumeGroqClient(): Groq | null {
   }
 }
 
+function extractJsonObject(text: string): any | null {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(jsonMatch[0]);
+  } catch {
+    return null;
+  }
+}
+
+async function runOpenRouterJsonCompletion(
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number
+): Promise<any | null> {
+  if (!OPENROUTER_API_KEY) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        max_tokens: maxTokens,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json()) as any;
+    const text = data?.choices?.[0]?.message?.content || "";
+    return extractJsonObject(text);
+  } catch {
+    return null;
+  }
+}
+
+async function runGroqJsonCompletion(
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number
+): Promise<any | null> {
+  const groqClient = getResumeGroqClient();
+  if (!groqClient) {
+    return null;
+  }
+
+  for (const model of GROQ_MODELS) {
+    try {
+      const response = await groqClient.chat.completions.create({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: maxTokens,
+      });
+
+      const content = response.choices[0]?.message?.content || "";
+      const parsed = extractJsonObject(content);
+      if (parsed) {
+        return parsed;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+async function runResumeJsonWithFallback(
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number
+): Promise<any | null> {
+  const openRouterResult = await runOpenRouterJsonCompletion(systemPrompt, userPrompt, maxTokens);
+  if (openRouterResult) {
+    return openRouterResult;
+  }
+
+  return runGroqJsonCompletion(systemPrompt, userPrompt, maxTokens);
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // 📝 RESUME CONTENT ENHANCEMENT
 // ═══════════════════════════════════════════════════════════════════
@@ -82,12 +186,6 @@ function getResumeGroqClient(): Groq | null {
 export async function enhanceResumeContent(
   request: ResumeEnhancementRequest
 ): Promise<ResumeEnhancementResponse | null> {
-  const groqClient = getResumeGroqClient();
-  if (!groqClient) {
-    console.warn("Groq client not available");
-    return null;
-  }
-
   try {
     const { section, currentContent, context } = request;
 
@@ -120,25 +218,11 @@ Provide response in JSON format:
   "atsScore": <0-100>
 }`;
 
-    const response = await groqClient.chat.completions.create({
-      model: "mixtral-8x7b-32768",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 1500,
-    });
-
-    const content = response.choices[0]?.message?.content || "";
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    
-    if (!jsonMatch) {
-      console.error("Failed to parse enhancement response");
+    const result = await runResumeJsonWithFallback(systemPrompt, userPrompt, 1500);
+    if (!result) {
       return null;
     }
 
-    const result = JSON.parse(jsonMatch[0]);
     return result as ResumeEnhancementResponse;
   } catch (error) {
     console.error("Error enhancing resume content:", error);
@@ -153,12 +237,6 @@ Provide response in JSON format:
 export async function compareResumeWithJob(
   request: JobComparisonRequest
 ): Promise<JobComparisonResponse | null> {
-  const groqClient = getResumeGroqClient();
-  if (!groqClient) {
-    console.warn("Groq client not available");
-    return null;
-  }
-
   try {
     const { resumeContent, jobDescription, targetRole } = request;
 
@@ -189,25 +267,11 @@ Provide response in JSON format:
   "atsRecommendations": ["recommendation1", "recommendation2"]
 }`;
 
-    const response = await groqClient.chat.completions.create({
-      model: "mixtral-8x7b-32768",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 1500,
-    });
-
-    const content = response.choices[0]?.message?.content || "";
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    
-    if (!jsonMatch) {
-      console.error("Failed to parse comparison response");
+    const result = await runResumeJsonWithFallback(systemPrompt, userPrompt, 1500);
+    if (!result) {
       return null;
     }
 
-    const result = JSON.parse(jsonMatch[0]);
     return result as JobComparisonResponse;
   } catch (error) {
     console.error("Error comparing resume with job:", error);
@@ -222,12 +286,6 @@ Provide response in JSON format:
 export async function scoreResumeATS(
   resumeContent: string
 ): Promise<ATSScoringResponse | null> {
-  const groqClient = getResumeGroqClient();
-  if (!groqClient) {
-    console.warn("Groq client not available");
-    return null;
-  }
-
   try {
     const systemPrompt = `You are an expert ATS system analyst. Score resumes on their compatibility with Applicant Tracking Systems.
 
@@ -253,25 +311,11 @@ Provide response in JSON format:
   "recommendations": ["rec1", "rec2", "rec3"]
 }`;
 
-    const response = await groqClient.chat.completions.create({
-      model: "mixtral-8x7b-32768",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
-
-    const content = response.choices[0]?.message?.content || "";
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    
-    if (!jsonMatch) {
-      console.error("Failed to parse ATS scoring response");
+    const result = await runResumeJsonWithFallback(systemPrompt, userPrompt, 1000);
+    if (!result) {
       return null;
     }
 
-    const result = JSON.parse(jsonMatch[0]);
     return result as ATSScoringResponse;
   } catch (error) {
     console.error("Error scoring resume ATS:", error);
@@ -371,12 +415,6 @@ export async function generateResumeContent(
   summary: string;
   keywords: string[];
 } | null> {
-  const groqClient = getResumeGroqClient();
-  if (!groqClient) {
-    console.warn("Groq client not available");
-    return null;
-  }
-
   try {
     const systemPrompt = `You are a resume writer expert. Generate powerful, ATS-optimized resume content that showcases impact and results.`;
 
@@ -393,24 +431,15 @@ Provide response in JSON format:
   "keywords": ["keyword1", "keyword2", "keyword3"]
 }`;
 
-    const response = await groqClient.chat.completions.create({
-      model: "mixtral-8x7b-32768",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 800,
-    });
-
-    const content = response.choices[0]?.message?.content || "";
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    
-    if (!jsonMatch) {
+    const result = await runResumeJsonWithFallback(systemPrompt, userPrompt, 800);
+    if (!result) {
       return null;
     }
 
-    return JSON.parse(jsonMatch[0]);
+    return {
+      summary: typeof result.summary === "string" ? result.summary : "",
+      keywords: Array.isArray(result.keywords) ? result.keywords : [],
+    };
   } catch (error) {
     console.error("Error generating resume content:", error);
     return null;
