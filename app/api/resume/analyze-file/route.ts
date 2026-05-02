@@ -8,15 +8,101 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { ResumeAPIResponse } from '@/types/resume'
+import Groq from 'groq-sdk'
 
-const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-1'
+const OPENROUTER_API_KEY = process.env.Open_Router_AI_Mentor_Key
+const OPENROUTER_MODEL = process.env.OPENROUTER_RESUME_MODEL || 'openai/gpt-4o-mini'
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const GROQ_API_KEY = process.env.GROQ_RESUME_BUILDER_KEY
+const GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'] as const
 
 interface AnalysisRequest {
   resumeFile?: File
   resumeText?: string
   jobDescription?: string
   jobDescriptionFile?: File
+}
+
+function extractJsonObject(text: string): any | null {
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) {
+    return null
+  }
+
+  try {
+    return JSON.parse(jsonMatch[0])
+  } catch {
+    return null
+  }
+}
+
+async function runOpenRouterAnalysis(prompt: string): Promise<any | null> {
+  if (!OPENROUTER_API_KEY) {
+    return null
+  }
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        max_tokens: 3000,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = (await response.json()) as any
+    const analysisText = data?.choices?.[0]?.message?.content || '{}'
+    return extractJsonObject(analysisText)
+  } catch {
+    return null
+  }
+}
+
+async function runGroqAnalysis(prompt: string): Promise<any | null> {
+  if (!GROQ_API_KEY) {
+    return null
+  }
+
+  const groqClient = new Groq({ apiKey: GROQ_API_KEY })
+  for (const model of GROQ_MODELS) {
+    try {
+      const response = await groqClient.chat.completions.create({
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 3000,
+      })
+
+      const analysisText = response.choices?.[0]?.message?.content || '{}'
+      const parsed = extractJsonObject(analysisText)
+      if (parsed) {
+        return parsed
+      }
+    } catch {
+      continue
+    }
+  }
+
+  return null
 }
 
 // Simple TF-IDF implementation
@@ -187,8 +273,8 @@ export async function POST(req: NextRequest) {
       ? cosineSimilarity(resumeTFIDF, jobTFIDF)
       : 0
 
-    // Stage 3: Claude API for advanced parsing
-    const claudePrompt = `You are an expert resume and job description analyst.
+    // Stage 3: LLM API for advanced parsing
+    const analysisPrompt = `You are an expert resume and job description analyst.
 
 Analyze the following resume and job description (if provided) and extract structured information:
 
@@ -240,28 +326,11 @@ Return ONLY valid JSON (no markdown):
   }` : 'null'}
 }`
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_API_KEY || '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: 3000,
-        messages: [
-          {
-            role: 'user',
-            content: claudePrompt,
-          },
-        ],
-      }),
-    })
+    const llmAnalysis =
+      (await runOpenRouterAnalysis(analysisPrompt)) ||
+      (await runGroqAnalysis(analysisPrompt))
 
-    if (!response.ok) {
-      console.error('Claude API error:', response.status)
-      // Return partial analysis using local extraction
+    if (!llmAnalysis) {
       return NextResponse.json(
         {
           success: true,
@@ -284,22 +353,11 @@ Return ONLY valid JSON (no markdown):
       )
     }
 
-    const data = (await response.json()) as any
-    const analysisText = data.content[0]?.text || '{}'
-
-    // Extract JSON from response
-    const jsonMatch = analysisText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error('Could not parse Claude response')
-    }
-
-    const analysis = JSON.parse(jsonMatch[0])
-
     return NextResponse.json(
       {
         success: true,
         data: {
-          ...analysis,
+          ...llmAnalysis,
           localSkillsExtracted: {
             resume: resumeSkills,
             job: jobSkills,
@@ -307,7 +365,7 @@ Return ONLY valid JSON (no markdown):
             missing: missingSkills,
           },
           tfidfSimilarity: similarity,
-          analysisMethod: 'claude-llm',
+          analysisMethod: 'llm-fallback-chain',
           timestamp: new Date().toISOString(),
         },
         timestamp: new Date().toISOString(),

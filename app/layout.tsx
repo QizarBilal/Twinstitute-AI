@@ -31,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
       <head>
         <link rel="icon" href="/Logo.png" />
         <link rel="shortcut icon" href="/Logo.png" />

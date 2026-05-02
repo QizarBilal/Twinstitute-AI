@@ -1,20 +1,103 @@
 /**
  * Advanced ATS Resume Scanner API
- * Comprehensive resume analysis inspired by SkillMatch-AI
+ * Comprehensive resume analysis using OpenRouter with Groq fallback
  * Analyzes ATS compatibility, job matching, skill gaps, and provides detailed recommendations
+ * Uses Open_Router_AI_Mentor_Key as primary and GROQ_RESUME_BUILDER_KEY as fallback
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { ATSScanResult, ResumeAPIResponse } from '@/types/resume'
+import Groq from 'groq-sdk'
 
-const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-1'
-const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
+const GROQ_API_KEY = process.env.GROQ_RESUME_BUILDER_KEY
+const OPENROUTER_API_KEY = process.env.Open_Router_AI_Mentor_Key
+const OPENROUTER_MODEL = process.env.OPENROUTER_RESUME_MODEL || 'openai/gpt-4o-mini'
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'] as const
 
 interface ATSScanRequest {
   resumeText: string
   jobDescription?: string
+}
+
+function extractJsonObject(text: string): any | null {
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) {
+    return null
+  }
+
+  try {
+    return JSON.parse(jsonMatch[0])
+  } catch {
+    return null
+  }
+}
+
+async function runOpenRouterATSAnalysis(prompt: string): Promise<any | null> {
+  if (!OPENROUTER_API_KEY) {
+    return null
+  }
+
+  try {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = (await response.json()) as any
+    const analysisText = data?.choices?.[0]?.message?.content || '{}'
+    return extractJsonObject(analysisText)
+  } catch {
+    return null
+  }
+}
+
+async function runGroqATSAnalysis(prompt: string): Promise<any | null> {
+  if (!GROQ_API_KEY) {
+    return null
+  }
+
+  const groqClient = new Groq({ apiKey: GROQ_API_KEY })
+
+  for (const model of GROQ_MODELS) {
+    try {
+      const response = await groqClient.chat.completions.create({
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      })
+
+      const analysisText = response.choices[0]?.message?.content || '{}'
+      const parsed = extractJsonObject(analysisText)
+      if (parsed) {
+        return parsed
+      }
+    } catch {
+      continue
+    }
+  }
+
+  return null
 }
 
 // Helper: Extract skills from text
@@ -60,7 +143,7 @@ function detectJobRole(jobDescription: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -101,8 +184,10 @@ export async function POST(req: NextRequest) {
       baseMatchScore = Math.round(skillMatchRatio * 100 * 0.6 + 75 * 0.4)
     }
 
-    // Call Claude API for comprehensive analysis
-    const claudePrompt = `You are an expert ATS (Applicant Tracking System) analyst and resume optimization specialist working with enterprise recruiting teams.
+    // Use OpenRouter first, then Groq, then local deterministic analysis
+    let analysis: any = null
+
+    const analysisPrompt = `You are an expert ATS (Applicant Tracking System) analyst and resume optimization specialist.
 
 Analyze the following resume${jobDescription ? ' against the provided job description' : ''} and provide detailed ATS analysis:
 
@@ -125,28 +210,20 @@ Provide your analysis in valid JSON format (no markdown, just raw JSON):
     "missingKeywords": [<string>],
     "recommendedAdditions": [<string>]
   },
-  "sections": {
-    "<section_name>": {
-      "present": <boolean>,
-      "quality": <"strong" | "adequate" | "weak">,
-      "suggestion": "<actionable suggestion>"
-    }
-  },
   "jobMatchAnalysis": {
     "targetRole": "<detected job title>",
     "roleMatch": <number 0-100>,
     "skillsMatch": <number 0-100>,
     "experienceMatch": <number 0-100>,
-    "educationRelevance": <number 0-100>,
-    "overallFit": <"strong" | "moderate" | "weak">
+    "educationRelevance": <number 0-100>
   },
   "strengths": [<string>],
   "improvements": [
     {
       "priority": <"critical" | "high" | "medium" | "low">,
-      "issue": "<issue description>",
-      "solution": "<specific solution>",
-      "impact": "<expected improvement>"
+      "issue": "<issue>",
+      "solution": "<solution>",
+      "impact": "<improvement>"
     }
   ],
   "formattingIssues": [<string>],
@@ -156,92 +233,16 @@ Provide your analysis in valid JSON format (no markdown, just raw JSON):
   }
 }
 
-Focus on:
-1. ATS parsing compatibility (format, structure, special characters)
-2. Keyword density and relevance to job (if provided)
-3. Section completeness and organization
-4. Quantified achievements and metrics
-5. Technical terminology precision
-6. Experience duration and progression
-7. Education alignment
-8. Modern resume best practices
+Focus on ATS compatibility, keywords, structure, and job fit.`
 
-Be specific, actionable, and data-driven.`
-
-    const response = await fetch(CLAUDE_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_API_KEY || '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: 2500,
-        messages: [
-          {
-            role: 'user',
-            content: claudePrompt,
-          },
-        ],
-      }),
-    })
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('Claude API error:', error)
-
-      // Return partial analysis using local extraction
-      const scanResult: ATSScanResult = {
-        score: baseMatchScore,
-        timestamp: new Date().toISOString(),
-        jobDescription,
-        missingKeywords: missingSkills,
-        foundKeywords: matchedSkills,
-        suggestions: [
-          {
-            priority: 'high',
-            suggestion: 'Use an online resume checker to verify ATS compatibility',
-            section: 'General',
-          },
-        ],
-        formatting: {
-          atsCompatible: true,
-          issues: [],
-          recommendations: ['Consider using standard fonts (Arial, Calibri)', 'Avoid tables and complex formatting'],
-        },
-        readabilityScore: 70,
-        competencyMatch: jobSkills.slice(0, 5).map((skill) => ({
-          skill,
-          resumeLevel: resumeSkills.includes(skill) ? 'verified' : 'weak',
-          jobRequiredLevel: 'intermediate',
-          gap: resumeSkills.includes(skill) ? 'meet' : 'below',
-        })),
-      }
-
-      return NextResponse.json(
-        {
-          success: true,
-          data: scanResult,
-          timestamp: new Date().toISOString(),
-        } as ResumeAPIResponse<ATSScanResult>
-      )
+    analysis = await runOpenRouterATSAnalysis(analysisPrompt)
+    if (!analysis) {
+      analysis = await runGroqATSAnalysis(analysisPrompt)
     }
 
-    const data = (await response.json()) as any
-    let analysisText = data.content[0]?.text || '{}'
-
-    // Extract JSON from response
-    const jsonMatch = analysisText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error('Could not parse Claude response')
-    }
-
-    const analysis = JSON.parse(jsonMatch[0])
-
-    // Calculate weighted final score
+    // Build final result
     let finalScore = baseMatchScore
-    if (jobDescription && analysis.jobMatchAnalysis) {
+    if (analysis?.jobMatchAnalysis) {
       const weights = {
         skills: 0.4,
         experience: 0.25,
@@ -253,7 +254,7 @@ Be specific, actionable, and data-driven.`
         (analysis.jobMatchAnalysis.skillsMatch || 0) * weights.skills +
           (analysis.jobMatchAnalysis.experienceMatch || 0) * weights.experience +
           (analysis.jobMatchAnalysis.educationRelevance || 0) * weights.education +
-          (analysis.atsScore || analysis.atsCompatibility?.parseability === 'high' ? 85 : 65) * weights.format
+          (analysis.atsScore || 85) * weights.format
       )
     }
 
@@ -261,24 +262,25 @@ Be specific, actionable, and data-driven.`
       score: Math.min(100, Math.max(0, finalScore)),
       timestamp: new Date().toISOString(),
       jobDescription,
-      missingKeywords: analysis.keywordAnalysis?.missingKeywords || missingSkills,
-      foundKeywords: analysis.keywordAnalysis?.matchedKeywords || matchedSkills,
-      suggestions: (analysis.improvements || []).map((imp: any) => ({
+      missingKeywords: analysis?.keywordAnalysis?.missingKeywords || missingSkills,
+      foundKeywords: analysis?.keywordAnalysis?.matchedKeywords || matchedSkills,
+      suggestions: (analysis?.improvements || []).map((imp: any) => ({
         priority: imp.priority,
         suggestion: imp.solution,
         section: 'Resume',
       })),
       formatting: {
-        atsCompatible: analysis.atsCompatibility?.parsing !== 'low',
-        issues: analysis.formattingIssues || [],
+        atsCompatible: analysis?.atsCompatibility?.parsing !== 'low' ?? true,
+        issues: analysis?.formattingIssues || [],
         recommendations: [
-          ...(analysis.recommendations?.shortTerm || []),
+          ...(analysis?.recommendations?.shortTerm || []),
           'Use standard fonts and formatting',
           'Avoid tables, images, and special characters',
+          'Keep clear section headings',
         ],
       },
-      readabilityScore: analysis.atsCompatibility?.readability || 75,
-      competencyMatch: (analysis.keywordAnalysis?.matchedKeywords || []).slice(0, 8).map((skill: string) => ({
+      readabilityScore: analysis?.atsCompatibility?.readability || 75,
+      competencyMatch: (analysis?.keywordAnalysis?.matchedKeywords || matchedSkills || []).slice(0, 8).map((skill: string) => ({
         skill,
         resumeLevel: 'verified',
         jobRequiredLevel: 'intermediate',

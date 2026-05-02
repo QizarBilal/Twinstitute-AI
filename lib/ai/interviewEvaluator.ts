@@ -153,13 +153,33 @@ function parseEvaluationResponse(response: string): Omit<InterviewEvaluationResu
     }
   } catch (error) {
     console.error('Failed to parse evaluation response:', error, response)
-    // Return default response if parsing fails
+    // If the response is the demo/fallback string returned when no GROQ key is configured,
+    // return a friendly mock evaluation so the UI can display something useful instead
+    const lower = String(response || '').toLowerCase()
+    if (lower.includes('demo response') || lower.includes('groq key') || lower.includes('please configure')) {
+      return {
+        score: 60,
+        strengths: ['Answer was captured (demo evaluation)'],
+        weaknesses: ['Detailed AI evaluation unavailable - configure GROQ key'],
+        suggestions: ['Set GROQ_RECRUITER_KEY in environment to enable full evaluation', 'Retry after configuring the key'],
+        feedback: 'This is a demo evaluation. The platform could not contact the Groq API because an API key was not configured. Configure GROQ_RECRUITER_KEY or GROQ_API_KEY to receive full AI evaluations.',
+        detailedScores: {
+          technicalDepth: 60,
+          clarity: 60,
+          structure: 60,
+          confidence: 60,
+          completeness: 60,
+        },
+      }
+    }
+
+    // Generic fallback response if parsing fails for other reasons
     return {
       score: 50,
       strengths: ['Unable to parse detailed feedback'],
       weaknesses: ['Parsing error occurred'],
       suggestions: ['Please contact support if this persists'],
-      feedback: `Raw evaluation: ${response.substring(0, 200)}...`,
+      feedback: `Raw evaluation: ${String(response || '').substring(0, 200)}...`,
       detailedScores: {
         technicalDepth: 50,
         clarity: 50,

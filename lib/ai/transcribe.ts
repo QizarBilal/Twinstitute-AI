@@ -3,7 +3,7 @@
  * Converts audio files to text using Groq's Whisper integration
  */
 
-import { callGroqAPI, GroqMessage } from '@/lib/groq-client'
+import { callGroqAPI, GroqMessage, SELECTED_GROQ_KEY } from '@/lib/groq-client'
 
 export interface TranscriptionResult {
   success: boolean
@@ -76,11 +76,11 @@ async function transcribeUsingFallback(audioIdentifier: string): Promise<Transcr
   // For testing, return a placeholder transcript
 
   try {
-    // In production, make actual API call:
-    // const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    // In production, make actual API call to a transcription provider:
+    // const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
     //   method: 'POST',
     //   headers: {
-    //     'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      //     'Authorization': `Bearer ${process.env.GROQ_RECRUITER_KEY}`,
     //   },
     //   body: formData
     // })
@@ -104,21 +104,21 @@ async function transcribeUsingFallback(audioIdentifier: string): Promise<Transcr
 }
 
 /**
- * For real production use, integrate with Whisper via OpenAI or similar
- * This is a more complete example:
+ * Transcribe audio using Groq's OpenAI-compatible audio transcription endpoint.
+ * This uses the recruiter key first, then falls back to the general Groq key.
  */
 export async function transcribeAudioWithWhisper(
   audioBuffer: Buffer,
   audioMimetype: string = 'audio/webm'
 ): Promise<TranscriptionResult> {
   try {
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+    const apiKey = SELECTED_GROQ_KEY || ''
 
-    if (!OPENAI_API_KEY) {
+    if (!apiKey) {
       return {
         success: false,
         transcript: '',
-        error: 'OPENAI_API_KEY not configured',
+        error: 'GROQ_RECRUITER_KEY not configured',
       }
     }
 
@@ -127,19 +127,20 @@ export async function transcribeAudioWithWhisper(
     const audioData = audioBuffer.buffer.slice(audioBuffer.byteOffset, audioBuffer.byteOffset + audioBuffer.byteLength) as ArrayBuffer
     const blob = new Blob([audioData], { type: audioMimetype })
     formData.append('file', blob, 'audio.webm')
-    formData.append('model', 'whisper-1')
+    formData.append('model', 'whisper-large-v3')
     formData.append('language', 'en')
 
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: formData,
     })
 
     if (!response.ok) {
-      throw new Error(`Whisper API error: ${response.statusText}`)
+      const errorText = await response.text()
+      throw new Error(`Groq transcription error: ${response.status} ${response.statusText} ${errorText}`)
     }
 
     const data = (await response.json()) as { text: string }
@@ -150,11 +151,11 @@ export async function transcribeAudioWithWhisper(
       confidence: 0.95,
     }
   } catch (error) {
-    console.error('Whisper transcription error:', error)
+    console.error('Groq transcription error:', error)
     return {
       success: false,
       transcript: '',
-      error: `Whisper transcription failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      error: `Groq transcription failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
     }
   }
 }

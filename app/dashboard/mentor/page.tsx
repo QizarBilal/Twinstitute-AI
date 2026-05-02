@@ -4,12 +4,14 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDataFetch } from '@/lib/hooks/useDataFetch'
+import { speakText, stopSpeech, formatMentorResponseAsText, isSpeechSynthesisAvailable } from '@/lib/text-to-speech'
 
 interface Message {
   id: string
   role: 'user' | 'mentor'
   content: string
   timestamp: Date
+  isPlaying?: boolean
 }
 
 interface MentorData {
@@ -31,11 +33,17 @@ export default function MentorPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [mentorData, setMentorData] = useState<MentorData | null>(null)
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null)
+  const [speechAvailable, setSpeechAvailable] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { data: twinData } = useDataFetch('/api/user/twin')
   const { data: performanceData } = useDataFetch('/api/user/recent-performance')
   const { data: labsData } = useDataFetch('/api/labs/progress')
+
+  useEffect(() => {
+    setSpeechAvailable(isSpeechSynthesisAvailable())
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -94,6 +102,25 @@ export default function MentorPage() {
 
       setMessages((prev) => [...prev, mentorMessage])
       setMentorData(data.data)
+
+      // Auto-play audio response if available
+      if (speechAvailable && data.data) {
+        const audioText = formatMentorResponseAsText(data.data)
+        setPlayingMessageId(mentorMessage.id)
+        
+        try {
+          await speakText(audioText, {
+            rate: 0.95,
+            pitch: 1,
+            volume: 1,
+            lang: 'en-US',
+          })
+        } catch (audioError) {
+          console.error('Audio playback error:', audioError)
+        } finally {
+          setPlayingMessageId(null)
+        }
+      }
     } catch (error) {
       console.error('Error:', error)
       const errorMessage: Message = {
@@ -105,6 +132,29 @@ export default function MentorPage() {
       setMessages((prev) => [...prev, errorMessage])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePlayAudio = async (messageId: string, messageContent: string) => {
+    if (playingMessageId === messageId) {
+      stopSpeech()
+      setPlayingMessageId(null)
+    } else {
+      stopSpeech()
+      setPlayingMessageId(messageId)
+      
+      try {
+        await speakText(messageContent, {
+          rate: 0.95,
+          pitch: 1,
+          volume: 1,
+          lang: 'en-US',
+        })
+      } catch (error) {
+        console.error('Audio error:', error)
+      } finally {
+        setPlayingMessageId(null)
+      }
     }
   }
 
@@ -163,13 +213,28 @@ export default function MentorPage() {
                   } p-4`}
                 >
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                  <p
-                    className={`text-xs mt-2 ${
-                      msg.role === 'user' ? 'text-blue-100/50' : 'text-slate-500'
-                    }`}
-                  >
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <p
+                      className={`text-xs ${
+                        msg.role === 'user' ? 'text-blue-100/50' : 'text-slate-500'
+                      }`}
+                    >
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                    {msg.role === 'mentor' && speechAvailable && (
+                      <button
+                        onClick={() => handlePlayAudio(msg.id, msg.content)}
+                        className={`ml-2 text-xs px-2 py-1 rounded ${
+                          playingMessageId === msg.id
+                            ? 'bg-cyan-500/50 text-white'
+                            : 'hover:bg-slate-700/50 text-slate-400'
+                        }`}
+                        title={playingMessageId === msg.id ? 'Stop audio' : 'Play audio'}
+                      >
+                        {playingMessageId === msg.id ? '⏸ Stop' : '🔊 Listen'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             ))}

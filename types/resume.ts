@@ -3,7 +3,22 @@
  * Comprehensive type system for dynamic resume generation
  */
 
-export type ResumeTemplate = 'modern-ats' | 'professional-classic' | 'creative-tech' | 'academic' | 'startup'
+export type ResumeTemplate = 
+  | 'modern-ats' 
+  | 'classic-corporate' 
+  | 'tech-focused' 
+  | 'academic' 
+  | 'startup' 
+  | 'executive-premium' 
+  | 'minimal-edge' 
+  | 'compact-professional' 
+  | 'technical-specialist' 
+  | 'consulting-elite'
+  | 'creative-designer'
+  | 'sales-professional'
+  | 'researcher'
+  | 'career-changer'
+  | 'startup-founder'
 
 export type SkillLevel = 'verified' | 'developing' | 'weak'
 
@@ -62,6 +77,7 @@ export interface Education {
 
 // Skills with levels
 export interface Skill {
+  id?: string
   name: string
   level: SkillLevel
   strength: number // 0-1 (0.7+ = verified, 0.4-0.69 = developing, <0.4 = weak)
@@ -111,6 +127,22 @@ export interface Certification {
   expirationDate?: string
 }
 
+// Languages
+export interface Language {
+  id: string
+  language: string
+  proficiency: 'Elementary' | 'Intermediate' | 'Advanced' | 'Fluent' | 'Native'
+}
+
+// Achievements
+export interface Achievement {
+  id: string
+  title: string
+  description: string
+  date: string
+  category?: 'Award' | 'Recognition' | 'Publication' | 'Speaking' | 'Other'
+}
+
 // Complete Resume Data Structure
 export interface ResumeData {
   id?: string
@@ -124,10 +156,8 @@ export interface ResumeData {
   capabilities: ProvenCapability[]
   projects: Project[]
   certifications: Certification[]
-  languages?: {
-    language: string
-    proficiency: 'Elementary' | 'Intermediate' | 'Advanced' | 'Fluent' | 'Native'
-  }[]
+  achievements: Achievement[]
+  languages: Language[]
   customSections?: {
     title: string
     content: string

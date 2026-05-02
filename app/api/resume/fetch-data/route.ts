@@ -100,6 +100,28 @@ export async function GET(req: NextRequest) {
       .filter(Boolean)
       .join(', ')
 
+    // Check if user has saved resume data
+    let savedResumeData = null
+    if (user.resumeData) {
+      try {
+        savedResumeData = JSON.parse(user.resumeData)
+      } catch (e) {
+        console.log('Could not parse saved resume data')
+      }
+    }
+
+    // If user has saved resume data, return that instead of reconstructed data
+    if (savedResumeData) {
+      return NextResponse.json(
+        {
+          success: true,
+          data: savedResumeData,
+          timestamp: new Date().toISOString(),
+        } as ResumeAPIResponse<FetchResumeDataResponse>
+      )
+    }
+
+    // Otherwise, construct fresh data from database sources
     // Format data for resume
     const responseData: FetchResumeDataResponse = {
       contact: {

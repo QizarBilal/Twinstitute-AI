@@ -11,6 +11,7 @@
  */
 
 import { getServerSession } from 'next-auth'
+import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { transcribeAudioWithWhisper } from '@/lib/ai/transcribe'
 import { evaluateInterview } from '@/lib/ai/interviewEvaluator'
@@ -88,13 +89,47 @@ export async function POST(req: Request): Promise<Response> {
         )
       }
     } else if (audioUrl) {
-      // For uploaded files, use the URL directly
-      // In a real scenario, you'd download the file and transcribe
-      // For now, we'll mock the transcription
-      transcript = `[Transcription of audio at ${audioUrl}]`
+      try {
+        // If the audioUrl is a local public path (e.g., /uploads/audio/xyz.webm), read file from disk
+        if (audioUrl.startsWith('/')) {
+          const { readFile } = await import('fs/promises')
+          const path = require('path')
+          const filepath = path.join(process.cwd(), 'public', audioUrl.replace(/^\//, ''))
+          const buffer = await readFile(filepath)
+          const ext = path.extname(filepath).replace('.', '')
+          const mime = ext === 'mp3' ? 'audio/mpeg' : ext === 'wav' ? 'audio/wav' : ext === 'ogg' ? 'audio/ogg' : 'audio/webm'
+          const transcriptionResult = await transcribeAudioWithWhisper(buffer, mime)
+          if (!transcriptionResult.success) {
+            throw new Error(transcriptionResult.error || 'Transcription failed')
+          }
+          transcript = transcriptionResult.transcript
+        } else {
+          // External URL: fetch and transcribe
+          const res = await fetch(audioUrl)
+          if (!res.ok) throw new Error('Failed to download audio')
+          const arrayBuffer = await res.arrayBuffer()
+          const buffer = Buffer.from(arrayBuffer)
+          const transcriptionResult = await transcribeAudioWithWhisper(buffer, 'audio/webm')
+          if (!transcriptionResult.success) {
+            throw new Error(transcriptionResult.error || 'Transcription failed')
+          }
+          transcript = transcriptionResult.transcript
+        }
+      } catch (error) {
+        console.error('Transcription error (audioUrl):', error)
+        return apiResponse(false, undefined, `Transcription failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
     }
 
     console.log('[INTERVIEW] Transcription complete:', transcript.substring(0, 100))
+
+    if (!transcript.trim()) {
+      return apiResponse(false, undefined, 'Transcription produced an empty transcript. Please record again.')
+    }
+
+    if (/^\[Transcription of audio at .*\]$/.test(transcript.trim())) {
+      return apiResponse(false, undefined, 'Transcription is still using a placeholder response. Configure a real transcription API key and retry.')
+    }
 
     // Step 2: Evaluate using AI
     console.log('[INTERVIEW] Starting AI evaluation...')
@@ -108,6 +143,8 @@ export async function POST(req: Request): Promise<Response> {
 
     // Step 3: Store in database
     console.log('[INTERVIEW] Storing evaluation in database...')
+    // Generate a unique proofArtifactId to avoid unique-index collisions when the field is nullable in the schema
+    const proofArtifactId = crypto.randomBytes(12).toString('hex')
     const interviewRecord = await (prisma as any).interviewEvaluation.create({
       data: {
         userId: user.id,
@@ -130,6 +167,7 @@ export async function POST(req: Request): Promise<Response> {
         status: 'evaluated',
         evaluationModel: 'llama-3.3-70b',
         evaluatedAt: new Date(),
+        proofArtifactId,
       },
     })
 

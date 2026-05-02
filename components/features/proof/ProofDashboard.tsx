@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Artifact {
@@ -12,6 +14,35 @@ interface Artifact {
   capabilityLevel: string
   isPublic: boolean
   createdAt: string
+}
+
+interface LabProof {
+  id: string
+  capability: string
+  level: string
+  score: number
+  passedTestCases: number
+  totalTestCases: number
+  verifiedAt: string
+  lab?: {
+    id: string
+    title: string
+  }
+}
+
+interface GeneratedProject {
+  id: string
+  title: string
+  description: string
+  domain: string
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'
+  estimatedHours: number
+  skills: string[]
+  deliverables: string[]
+  acceptanceCriteria: string[]
+  whyItFits: string
+  workPlan: string[]
+  impact: string
 }
 
 interface ScoreData {
@@ -38,11 +69,144 @@ interface ScoreData {
 }
 
 export default function ProofDashboard() {
+  const router = useRouter()
+  const { data: session } = useSession()
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
+  const [labProofs, setLabProofs] = useState<LabProof[]>([])
   const [scoreData, setScoreData] = useState<ScoreData | null>(null)
+  const [projects, setProjects] = useState<GeneratedProject[]>([])
+  const [selectedProject, setSelectedProject] = useState<GeneratedProject | null>(null)
+  const [projectCount, setProjectCount] = useState<5 | 6 | 7 | 8 | 9 | 10>(7)
+  const [projectLoading, setProjectLoading] = useState(true)
+  const [projectRefreshing, setProjectRefreshing] = useState(false)
+  const [projectError, setProjectError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
   const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null)
+  const roleLabel = session?.user?.selectedRole || session?.user?.name || 'your finalized role'
+  const projectStorageKey = `twinstitute:proof-projects:${session?.user?.id || 'guest'}`
+  const projectSelectionKey = `twinstitute:selected-proof-project:${session?.user?.id || 'guest'}`
+  const sharedProjectSelectionKey = 'twinstitute:selected-proof-project'
+
+  const loadGeneratedProjects = async () => {
+    if (!session?.user?.id) return
+
+    setProjectLoading(true)
+    setProjectError(null)
+
+    try {
+      const savedProjectsRaw = window.localStorage.getItem(projectStorageKey)
+      const savedSelectionRaw = window.localStorage.getItem(projectSelectionKey)
+
+      if (savedProjectsRaw) {
+        try {
+          const savedProjects = JSON.parse(savedProjectsRaw)
+          if (Array.isArray(savedProjects) && savedProjects.length > 0) {
+            setProjects(savedProjects)
+          }
+        } catch {
+          window.localStorage.removeItem(projectStorageKey)
+        }
+      }
+
+      if (savedSelectionRaw) {
+        try {
+          setSelectedProject(JSON.parse(savedSelectionRaw))
+        } catch {
+          window.localStorage.removeItem(projectSelectionKey)
+        }
+      }
+
+      const response = await fetch('/api/proof/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count: projectCount }),
+      })
+
+      const data = await response.json()
+      if (!response.ok || !Array.isArray(data.projects)) {
+        throw new Error(data.error || 'Failed to generate projects')
+      }
+
+      const generatedProjects = data.projects as GeneratedProject[]
+      setProjects(generatedProjects)
+
+      let savedSelectionId: string | null = null
+      if (savedSelectionRaw) {
+        try {
+          savedSelectionId = (JSON.parse(savedSelectionRaw) as GeneratedProject).id
+        } catch {
+          savedSelectionId = null
+        }
+      }
+
+      const matchedSelection = savedSelectionId
+        ? generatedProjects.find((project) => project.id === savedSelectionId)
+        : null
+      const nextSelection = matchedSelection || generatedProjects[0] || null
+      setSelectedProject(nextSelection)
+
+      window.localStorage.setItem(projectStorageKey, JSON.stringify(generatedProjects))
+      if (nextSelection) {
+        window.localStorage.setItem(projectSelectionKey, JSON.stringify(nextSelection))
+        window.localStorage.setItem(sharedProjectSelectionKey, JSON.stringify(nextSelection))
+      }
+    } catch (error) {
+      console.error('Failed to load generated projects:', error)
+      setProjectError(error instanceof Error ? error.message : 'Failed to generate projects')
+    } finally {
+      setProjectLoading(false)
+    }
+  }
+
+  const refreshGeneratedProjects = async () => {
+    if (!session?.user?.id) return
+
+    setProjectRefreshing(true)
+    setProjectError(null)
+
+    try {
+      const response = await fetch('/api/proof/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count: projectCount }),
+      })
+
+      const data = await response.json()
+      if (!response.ok || !Array.isArray(data.projects)) {
+        throw new Error(data.error || 'Failed to refresh projects')
+      }
+
+      const generatedProjects = data.projects as GeneratedProject[]
+      const nextSelection = generatedProjects[0] || null
+      setProjects(generatedProjects)
+      setSelectedProject(nextSelection)
+      window.localStorage.setItem(projectStorageKey, JSON.stringify(generatedProjects))
+      if (nextSelection) {
+        window.localStorage.setItem(projectSelectionKey, JSON.stringify(nextSelection))
+        window.localStorage.setItem(sharedProjectSelectionKey, JSON.stringify(nextSelection))
+      }
+    } catch (error) {
+      console.error('Failed to refresh projects:', error)
+      setProjectError(error instanceof Error ? error.message : 'Failed to refresh projects')
+    } finally {
+      setProjectRefreshing(false)
+    }
+  }
+
+  const selectGeneratedProject = (project: GeneratedProject) => {
+    setSelectedProject(project)
+    window.localStorage.setItem(projectSelectionKey, JSON.stringify(project))
+    window.localStorage.setItem(sharedProjectSelectionKey, JSON.stringify(project))
+  }
+
+  const workOnSelectedProject = () => {
+    if (!selectedProject) return
+
+    window.localStorage.setItem(projectSelectionKey, JSON.stringify(selectedProject))
+    window.localStorage.setItem(sharedProjectSelectionKey, JSON.stringify(selectedProject))
+    router.push('/dashboard/projects')
+  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,6 +215,7 @@ export default function ProofDashboard() {
           fetch('/api/proof'),
           fetch('/api/proof/score'),
         ])
+        const labProofsRes = await fetch('/api/labs/proofs')
 
         if (artifactsRes.ok) {
           const data = await artifactsRes.json()
@@ -64,9 +229,15 @@ export default function ProofDashboard() {
           // Extract from success response wrapper
           setScoreData(data.data || data)
         }
+
+        if (labProofsRes.ok) {
+          const data = await labProofsRes.json()
+          setLabProofs(Array.isArray(data.proofs) ? data.proofs : [])
+        }
       } catch (error) {
         console.error('Failed to load proof data:', error)
         setArtifacts([])
+        setLabProofs([])
       } finally {
         setLoading(false)
       }
@@ -75,9 +246,16 @@ export default function ProofDashboard() {
     loadData()
   }, [])
 
+  useEffect(() => {
+    if (!session?.user?.id) return
+    loadGeneratedProjects()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, projectCount])
+
   const filteredArtifacts = Array.isArray(artifacts)
     ? artifacts.filter((artifact) => filter === 'all' || artifact.artifactType === filter)
     : []
+  const hasLabProofs = labProofs.length > 0
 
   if (loading) {
     return (
@@ -192,6 +370,237 @@ export default function ProofDashboard() {
           </div>
         </motion.div>
       )}
+
+      {hasLabProofs && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-8 backdrop-blur"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-white">Verified Lab Proofs</h2>
+              <p className="text-slate-400 text-sm mt-1">Capability proofs generated from successful lab submissions.</p>
+            </div>
+            <div className="text-sm text-slate-400">{labProofs.length} verified</div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {labProofs.map((proof) => (
+              <div key={proof.id} className="bg-slate-800/30 rounded-xl p-5 border border-slate-700/50">
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Lab Proof</p>
+                    <h3 className="font-semibold text-white mt-1">{proof.capability}</h3>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded-full border border-slate-600/50 text-slate-300 capitalize">
+                    {proof.level}
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-sm text-slate-400">
+                  <p>Score: <span className="text-white font-medium">{proof.score}%</span></p>
+                  <p>Test cases: <span className="text-white font-medium">{proof.passedTestCases}/{proof.totalTestCases}</span></p>
+                  <p>Verified: <span className="text-white font-medium">{new Date(proof.verifiedAt).toLocaleDateString()}</span></p>
+                  {proof.lab?.title && <p>Lab: <span className="text-white font-medium">{proof.lab.title}</span></p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.18 }}
+        className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-8 backdrop-blur"
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between mb-6">
+          <div className="space-y-2 max-w-3xl">
+            <p className="text-xs uppercase tracking-[0.22em] text-blue-300">Project Proof Studio</p>
+            <h2 className="text-2xl font-bold text-white">Role-Based Projects for {roleLabel}</h2>
+            <p className="text-sm text-slate-400">
+              Generate 5 to 10 projects tailored to the user&apos;s finalized role, refresh the set whenever you want a new angle,
+              then choose the one you want to build and prove next.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1 rounded-xl border border-slate-700/60 bg-slate-950/60 p-1">
+              {[5, 6, 7, 8, 9, 10].map((count) => (
+                <button
+                  key={count}
+                  onClick={() => setProjectCount(count as 5 | 6 | 7 | 8 | 9 | 10)}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                    projectCount === count ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {count}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={refreshGeneratedProjects}
+              disabled={projectRefreshing}
+              className="px-4 py-3 rounded-xl border border-slate-700/60 bg-slate-950/60 text-sm font-semibold text-white hover:border-blue-500/50 hover:bg-slate-900/80 transition-colors disabled:opacity-60"
+            >
+              {projectRefreshing ? 'Refreshing...' : 'Refresh Projects'}
+            </button>
+          </div>
+        </div>
+
+        {projectError && (
+          <div className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            {projectError}
+          </div>
+        )}
+
+        {projectLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="h-56 rounded-2xl border border-slate-800 bg-slate-950/60 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {projects.map((project, index) => {
+              const isSelected = selectedProject?.id === project.id
+
+              return (
+                <button
+                  key={project.id}
+                  onClick={() => selectGeneratedProject(project)}
+                  className={`text-left rounded-2xl border p-5 transition-all duration-200 ${
+                    isSelected
+                      ? 'border-blue-500/70 bg-blue-500/10 shadow-[0_0_0_1px_rgba(59,130,246,0.25)]'
+                      : 'border-slate-800 bg-slate-950/70 hover:border-slate-600 hover:bg-slate-900/90'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Project {index + 1}</p>
+                      <h3 className="mt-1 text-lg font-semibold text-white">{project.title}</h3>
+                    </div>
+                    <span className="rounded-full border border-slate-700/60 px-2.5 py-1 text-[11px] font-semibold text-slate-300">
+                      {project.difficulty}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-slate-400 line-clamp-3">{project.description}</p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {project.skills.slice(0, 4).map((skill) => (
+                      <span key={skill} className="rounded-full border border-slate-800 bg-slate-900/80 px-2.5 py-1 text-[11px] text-slate-300">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
+                    <span>{project.estimatedHours} hours</span>
+                    <span>{project.domain}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {selectedProject && (
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-4">
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-blue-300">Selected Project</p>
+                  <h3 className="mt-2 text-3xl font-bold text-white">{selectedProject.title}</h3>
+                  <p className="mt-3 text-slate-400 max-w-3xl">{selectedProject.description}</p>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-slate-300">
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Estimated Effort</div>
+                  <div className="mt-1 font-semibold text-white">{selectedProject.estimatedHours} hours</div>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Why it fits</p>
+                  <p className="mt-2 text-sm text-slate-200">{selectedProject.whyItFits}</p>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Impact</p>
+                  <p className="mt-2 text-sm text-slate-200">{selectedProject.impact}</p>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Domain</p>
+                  <p className="mt-2 text-sm text-slate-200">{selectedProject.domain}</p>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-3">Deliverables</p>
+                  <ul className="space-y-2 text-sm text-slate-300">
+                    {selectedProject.deliverables.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span className="text-blue-400">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-3">Work Plan</p>
+                  <ul className="space-y-2 text-sm text-slate-300">
+                    {selectedProject.workPlan.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span className="text-blue-400">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-3">Acceptance Criteria</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-slate-300">
+                  {selectedProject.acceptanceCriteria.map((criterion) => (
+                    <div key={criterion} className="flex gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>{criterion}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 flex flex-col gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Ready to start</p>
+                <p className="mt-2 text-sm text-slate-300">
+                  This selection is stored locally so the Project Lab can open with the same project in focus.
+                </p>
+              </div>
+              <button
+                onClick={workOnSelectedProject}
+                className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
+              >
+                Work on This Project
+              </button>
+              <button
+                onClick={refreshGeneratedProjects}
+                className="rounded-xl border border-slate-700/60 bg-slate-950/60 px-4 py-3 text-sm font-semibold text-white transition-colors hover:border-blue-500/50"
+              >
+                Generate New Set
+              </button>
+            </div>
+          </div>
+        )}
+      </motion.div>
 
       {/* Skill Breakdown */}
       {scoreData && Object.keys(scoreData.skillBreakdown).length > 0 && (
