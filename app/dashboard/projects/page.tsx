@@ -54,12 +54,17 @@ export default function ProjectLabPage() {
       // Fetch task queue from API
       const queueRes = await fetch('/api/labs/queue')
       const queueData = await queueRes.json()
+      const proofProjectRaw = typeof window !== 'undefined'
+        ? window.localStorage.getItem('twinstitute:selected-proof-project')
+        : null
 
       if (queueData.queue) {
         const queue = queueData.queue
+        const nextTasks = Array.isArray(queue.nextTasks) ? queue.nextTasks : []
+        const recommendedTasks = Array.isArray(queue.recommendedTasks) ? queue.recommendedTasks : []
         
         // Transform queue into projects format
-        const projects: Project[] = queue.nextTasks.map((task: any, idx: number) => ({
+        const projects: Project[] = nextTasks.map((task: any, idx: number) => ({
           id: task.id,
           name: task.title,
           description: task.description,
@@ -73,7 +78,7 @@ export default function ProjectLabPage() {
         }))
 
         // Add recommended tasks
-        const recommendedProjects: Project[] = queue.recommendedTasks
+        const recommendedProjects: Project[] = recommendedTasks
           .slice(0, 2)
           .map((task: any) => ({
             id: task.id,
@@ -87,8 +92,23 @@ export default function ProjectLabPage() {
             estimatedDuration: Math.round(task.estimatedTime / 60),
           }))
 
-        setProjects([...projects, ...recommendedProjects])
-        setActiveProject(projects[0] || null)
+        const combinedProjects = [...projects, ...recommendedProjects]
+
+        let proofProject: Project | null = null
+        if (proofProjectRaw) {
+          try {
+            proofProject = JSON.parse(proofProjectRaw) as Project
+          } catch {
+            proofProject = null
+          }
+        }
+
+        const nextProjects = proofProject
+          ? [proofProject, ...combinedProjects.filter(project => project.id !== proofProject.id)]
+          : combinedProjects
+
+        setProjects(nextProjects)
+        setActiveProject(proofProject || nextProjects[0] || null)
 
         // Simulate pipeline with generating tasks
         const mockPipeline: PipelineItem[] = [

@@ -35,20 +35,27 @@ export const Navbar: React.FC = () => {
           transition={{ duration: 0.2 }}
         >
           <Link href="/" className="block group flex items-center gap-2">
-            <img src="/Logo.png" alt="Twinstitute Logo" className="w-9 h-9 object-contain" />
-            <motion.span 
-              className="text-sm font-extrabold tracking-tight whitespace-nowrap"
-              animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-              style={{
-                backgroundImage: "linear-gradient(to right, #ffffff, #00D9FF, #ffffff)",
-                backgroundSize: "200% auto",
-                WebkitBackgroundClip: "text",
-                color: "transparent"
-              }}
+            <motion.div
+              className="relative flex items-center"
+              animate={{ y: [0, -1, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             >
-              TWIN<span className="font-light text-[#00D9FF]">AI</span>
-            </motion.span>
+              <span className="absolute -inset-x-4 -inset-y-2 rounded-full bg-cyan-400/10 blur-xl opacity-70 group-hover:opacity-100 transition-opacity" />
+              <motion.span
+                className="relative text-[1.05rem] sm:text-[1.15rem] md:text-[1.2rem] font-black tracking-[0.18em] whitespace-nowrap uppercase"
+                animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                transition={{ duration: 7, repeat: Infinity, ease: 'linear' }}
+                style={{
+                  backgroundImage: 'linear-gradient(90deg, #ffffff 0%, #7cecff 18%, #2fb8ff 35%, #ffffff 55%, #d9fbff 72%, #2fb8ff 88%, #ffffff 100%)',
+                  backgroundSize: '300% auto',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: '0 0 22px rgba(59, 130, 246, 0.18), 0 0 42px rgba(34, 211, 238, 0.18)',
+                }}
+              >
+                Twinstitute <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500 bg-clip-text text-transparent">AI</span>
+              </motion.span>
+            </motion.div>
           </Link>
         </motion.div>
 
