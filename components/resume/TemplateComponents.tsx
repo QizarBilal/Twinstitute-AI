@@ -180,10 +180,10 @@ export function Template3TechFocused({ resume, enabledSections }: TemplateCompon
       {/* Left Sidebar - Skills */}
       <div className="w-48 bg-gradient-to-b from-slate-800 to-slate-900 text-white px-6 py-8 space-y-6">
         {enabledSections.contact && (
-          <div>
+          <>
             <h1 className="text-lg font-bold text-cyan-300">{resume.contact.name}</h1>
             <p className="text-xs text-cyan-200 mt-1">{resume.contact.title}</p>
-          </div>
+          </>
         )}
         
         {enabledSections.skills && resume.skills?.length > 0 && (
