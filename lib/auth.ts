@@ -86,26 +86,32 @@ export const authOptions: NextAuthOptions = {
         const email = normalizeEmail(user.email || '')
         if (!email) return false
 
-        const existingUser = await prisma.user.findUnique({
-          where: { email },
-        })
+        try {
+          const existingUser = await prisma.user.findUnique({
+            where: { email },
+          })
 
-        if (!existingUser) {
-          const accountType = isInstitutionalEmail(email) ? 'academic_institution' : 'learner'
-          
-          await prisma.user.create({
-            data: {
-              email,
-              fullName: user.name || '',
-              accountType,
-              emailVerified: true,
-            },
-          })
-        } else if (!existingUser.emailVerified) {
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: { emailVerified: true },
-          })
+          if (!existingUser) {
+            const accountType = isInstitutionalEmail(email) ? 'academic_institution' : 'learner'
+            
+            await prisma.user.create({
+              data: {
+                email,
+                fullName: user.name || '',
+                accountType,
+                emailVerified: true,
+              },
+            })
+          } else if (!existingUser.emailVerified) {
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { emailVerified: true },
+            })
+          }
+        } catch (error) {
+          // Database error during sign in - log but allow sign in with token only
+          console.error('[signIn] Database error:', error instanceof Error ? error.message : error)
+          // Return true to allow sign in even if DB is down (session will be JWT-only)
         }
       }
       return true
@@ -119,23 +125,28 @@ export const authOptions: NextAuthOptions = {
       
       // Refresh user state from database
       if (token.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { 
-            fullName: true,
-            accountType: true,
-            selectedRole: true,
-            selectedDomain: true,
-            emailVerified: true,
-          },
-        })
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { 
+              fullName: true,
+              accountType: true,
+              selectedRole: true,
+              selectedDomain: true,
+              emailVerified: true,
+            },
+          })
 
-        if (dbUser) {
-          token.name = dbUser.fullName || token.name
-          token.accountType = dbUser.accountType
-          token.selectedRole = dbUser.selectedRole
-          token.selectedDomain = dbUser.selectedDomain
-          token.emailVerified = dbUser.emailVerified
+          if (dbUser) {
+            token.name = dbUser.fullName || token.name
+            token.accountType = dbUser.accountType
+            token.selectedRole = dbUser.selectedRole
+            token.selectedDomain = dbUser.selectedDomain
+            token.emailVerified = dbUser.emailVerified
+          }
+        } catch (error) {
+          // Database connection failed - continue with existing token data
+          console.error('[jwt] Database error:', error instanceof Error ? error.message : error)
         }
       }
       return token

@@ -1,7 +1,7 @@
 /**
- * Strict IIT Professor Mentor System
+ * Professional Mentor System
  * - Single Groq API call per message (no racing, no OpenRouter)
- * - Harsh, focused on academics and skills
+ * - Focused on academics and skills development
  * - Blocks unrelated conversations
  * - Uses GROQ_MENTOR_KEY from .env
  */
@@ -33,48 +33,40 @@ interface MentorResponse {
   }
 }
 
-const SYSTEM_PROMPT = `You are a STRICT, HARSH IIT professor mentor. Speak ONLY in ENGLISH. Do not use Hindi or mixed languages.
+const SYSTEM_PROMPT = `You are an expert mentor who helps students with technical skills development and academic excellence. You're knowledgeable, professional, articulate, and genuinely interested in each student's progress.
 
-You don't tolerate nonsense and focus ONLY on academics, technical skills, and execution excellence. This is an institution for rigorous learning - not casual chat.
+PERSONALITY & STYLE:
+- Conversational yet authoritative. Natural and human-like in communication
+- Crisp and composed: deliver information clearly without unnecessary verbosity
+- Adapts response length to question complexity (brief for simple questions, detailed for complex ones)
+- Encouraging and constructive, never condescending
+- Uses perfect English with excellent grammar and formatting
+- When discussing performance, be honest but solutions-focused
 
-PERSONALITY TRAITS:
-- Direct and no-nonsense. No sugar-coating or motivational speeches.
-- Speak like an IIT professor: use technical terms, expect excellence, demand accountability.
-- Example tone: "Your execution rate is abysmal. You're completing barely half your tasks. Stop making excuses and buckle down."
-- Be brutally honest about performance gaps and weaknesses
-- Demand action and improvement, not hope or empty promises
+HOW TO RESPOND:
+- For simple contextual questions ("What are you?", "How can you help?"): Answer directly in 1-2 sentences, natural tone
+- For academic/skill questions: Provide structured but natural advice
+- For learning queries: Realistic timelines, honest assessment, actionable steps
+- Always prioritize clarity and user value over formal structure
 
-CRITICAL RULES:
-1. SPEAK ONLY IN ENGLISH - Do NOT mix Hindi, do NOT use Hindi phrases
-2. NEVER generate metrics - use ONLY provided data.
-3. Be brutally honest about performance gaps.
-4. If the question is NOT about: academics, skills, technical progress, capability roadmap, or execution - REJECT IT.
-5. Use actual numbers provided from user data. No generics or hallucinations.
-6. Demand action, not hope.
-7. Always reference specific user metrics and weak areas to personalize your response
-
-USER DATA PROVIDED:
-- Capability Score (0-100)
-- Execution Rate (completed/total tasks)
-- Progress (modules completed/total)
-- Weekly Consistency (0-100)
-- Weak Skills (bottom 3)
-- Strong Skills (top 3)
-- Recent Activity (last 3-5 actions)
-
-RESPONSE FORMAT (exactly these 4 sections):
-1. ANALYSIS: Harsh assessment of current state (1-2 sentences, direct, use provided numbers)
-2. INSIGHTS: 2-3 specific technical observations (bullet points, based on actual data)
-3. NEXT_STEPS: 2-3 hard actions to take immediately (bullet points, demand-based, specific)
-4. RISKS: Concerning patterns or threats to progress (based on provided metrics)
+WHEN USING USER DATA:
+- Reference specific metrics naturally in conversation (not as lists)
+- Use their weak/strong skills to personalize guidance
+- Connect performance patterns to actionable improvements
+- Never generate fake metrics; only use provided data
 
 TONE EXAMPLES:
-- "Your execution rate is 38%. That means you're abandoning 62% of your tasks. This is pathetic."
-- "JavaScript is in your weak skills list. You need 2 hours daily practice until it becomes strong."
-- "Your weekly consistency is 25%. You're all over the place. Set a fixed schedule now."
-- "No consistency means no learning. Fix this immediately."
+- "I'm your academic mentor focused on helping you develop technical skills and track your learning progress."
+- "Your execution rate is 45%, which suggests you're starting tasks but not completing them. Let's focus on finishing what you begin."
+- "To learn Python in 10 days requires intensive daily practice—4-5 hours minimum. It's ambitious but feasible with structured effort and consistency."
+- "Your strongest area is React, which is great. Let's use that momentum to strengthen your weaknesses in system design."
 
-Remember: You're an IIT professor. Act like it. Be harsh but fair. Demand excellence. Always speak in ENGLISH.`
+KEY RULES:
+1. Always respond in clear, professional English
+2. Match response length to question type: simple questions = brief answers
+3. Never make up data. Use only provided student metrics
+4. Be helpful, not restrictive. Answer questions about learning strategies, role transitions, skill building
+5. For off-topic requests (jokes, recipes, unrelated topics): politely redirect with a friendly reminder`
 
 /**
  * Single Groq API call - no racing, no OpenRouter
@@ -112,25 +104,24 @@ export async function getMentorResponse(
   console.log('[Mentor] Question accepted, building context for Groq API')
   
   const contextPrompt = `
-User Data:
-- Role: ${context.role} → Target: ${context.targetRole}
-- Capability Score: ${Math.round(context.capabilityScore)}%
-- Execution Rate: ${Math.round(context.executionRate)}% (${context.progressCount}/${context.progressTotal} tasks completed)
-- Weekly Consistency: ${Math.round(context.weeklyConsistency)}%
-- Progress: ${context.progressCount}/${context.progressTotal} modules
+STUDENT PROFILE:
+• Role: ${context.role} → Target: ${context.targetRole}
+• Capability Score: ${Math.round(context.capabilityScore)}%
+• Execution Rate: ${Math.round(context.executionRate)}% (${context.progressCount}/${context.progressTotal} tasks completed)
+• Weekly Consistency: ${Math.round(context.weeklyConsistency)}%
 
-Strongest Skills:
-${context.strongSkills.slice(0, 3).map((s) => `- ${s}`).join('\n')}
+STRENGTHS:
+${context.strongSkills.slice(0, 3).map((s, i) => `${i + 1}. ${s}`).join('\n')}
 
-Weakest Skills:
-${context.weakSkills.slice(0, 3).map((s) => `- ${s}`).join('\n')}
+AREAS FOR DEVELOPMENT:
+${context.weakSkills.slice(0, 3).map((s, i) => `${i + 1}. ${s}`).join('\n')}
 
-Recent Activity:
-${context.recentActivity.slice(0, 5).map((a) => `- ${a}`).join('\n')}
+RECENT ACTIVITY:
+${context.recentActivity.slice(0, 5).map((a, i) => `${i + 1}. ${a}`).join('\n')}
 
-Student Question: "${userMessage}"
+STUDENT'S QUESTION: "${userMessage}"
 
-Be harsh, be direct, be an IIT professor. Use the specific numbers and data provided. Always speak in ENGLISH. No Hindi.
+Please provide a thoughtful, well-written response. Keep it natural and conversational. For simple questions, answer directly and concisely. For complex questions, provide structured advice. Use the student's data naturally to personalize your response when relevant.
 `
 
   try {
@@ -208,50 +199,56 @@ async function getGroqResponse(contextPrompt: string): Promise<MentorResponse> {
 }
 
 /**
- * Validate that question is academic/skills related
- * Blocks off-topic conversations like casual chat, jokes, etc.
+ * Validate that question is appropriate to answer
+ * Allow contextual questions about the mentor, learning, and skills
+ * Only reject truly off-topic requests
  */
 function validateAcademicQuestion(message: string): boolean {
   const lowerMessage = message.toLowerCase()
 
-  // Off-topic keywords that trigger rejection (strict list)
-  const offTopicKeywords = [
+  // Explicit off-topic keywords that need rejection (jokes, unrelated topics)
+  const strictlyOffTopic = [
     'tell me a joke', 'tell me joke', 'joke', 'funny', 'meme', 'recipe',
-    'movie', 'film', 'game', 'sport', 'cricket', 'football', 'music',
-    'pizza', 'food', 'weather', 'bollywood', 'love', 'girlfriend',
-    'boyfriend', 'dating', 'relationship', 'day off', 'party',
-    'help me cheat', 'exam solution', 'assignment answer', 'please do my homework',
-    'what are you', 'what is your name', 'who are you', 'tell me about',
+    'movie', 'film', 'sport', 'cricket', 'football', 'pizza', 'food', 'weather',
+    'help me cheat', 'exam solution', 'assignment answer',
   ]
 
-  // Check if this is explicitly off-topic
-  for (const keyword of offTopicKeywords) {
+  // Check strictly off-topic
+  for (const keyword of strictlyOffTopic) {
     if (lowerMessage.includes(keyword)) {
-      console.log('[Mentor] Question rejected - off-topic keyword:', keyword)
+      console.log('[Mentor] Question rejected - strictly off-topic:', keyword)
       return false
     }
   }
 
-  // Academic keywords that confirm relevance
+  // Allow contextual questions
+  const contextualKeywords = [
+    'what are you', 'who are you', 'what can you help', 'what do you do',
+    'how can you help', 'tell me about yourself', 'what is your role',
+  ]
+
+  const isContextual = contextualKeywords.some(kw => lowerMessage.includes(kw))
+  
+  // Academic/learning keywords
   const academicKeywords = [
-    'skill', 'progress', 'capability', 'execute', 'assignment', 'lab', 'task',
+    'skill', 'progress', 'capability', 'execute', 'task',
     'score', 'performance', 'weak', 'strong', 'learn', 'module', 'certification',
     'roadmap', 'goal', 'target', 'javascript', 'python', 'data structure',
     'algorithm', 'system design', 'database', 'api', 'backend', 'frontend',
     'deploy', 'test', 'debug', 'code', 'refactor', 'improve',
     'how can i', 'help me', 'how to', 'what should i', 'suggest',
-    'recommend', 'guide me', 'show me', 'teach me', 'best practice',
+    'recommend', 'guide me', 'teach me', 'best practice', 'career',
+    'next step', 'improve', 'strengthen', 'focus',
   ]
 
   const hasAcademicKeyword = academicKeywords.some(keyword => lowerMessage.includes(keyword))
   const isLongEnough = message.trim().length > 3
-
-  // More lenient: accept if has academic keyword and is substantial enough
-  // Question mark is NOT required anymore (people say "Tell me how to improve" without ?)
-  const isValid = hasAcademicKeyword && isLongEnough
+  
+  // Accept: contextual questions OR academic questions
+  const isValid = (isContextual || hasAcademicKeyword) && isLongEnough
   
   if (!isValid) {
-    console.log('[Mentor] Question rejected - not academic enough:', message)
+    console.log('[Mentor] Question appears off-topic:', message)
   }
   
   return isValid
@@ -259,22 +256,22 @@ function validateAcademicQuestion(message: string): boolean {
 
 /**
  * Response for off-topic questions
- * Harsh and direct, in ENGLISH per IIT professor style
+ * Friendly redirect without being judgmental
  */
 function getOffTopicResponse(): MentorResponse {
   return {
-    analysis: 'I am an academics and skills-focused mentor only. Off-topic questions waste your limited API calls. Ask me about your technical progress instead.',
+    analysis: "I focus specifically on your academic progress and technical skill development. I can't help with unrelated topics, but I'm here to guide you on learning, skill gaps, and your roadmap.",
     insights: [
-      'Your question is not related to your capability roadmap or technical skills',
-      'Stop wasting time on irrelevant topics and focus on structured learning',
-      'Every API call should drive you closer to your target role',
+      "I'm most useful for discussing your technical progress and learning strategy",
+      "Questions about your skills, performance, and capability are what I can address best",
+      "Let's keep our conversations focused on driving you toward your goals",
     ],
     nextSteps: [
-      'Ask me about your skill gaps and how to improve them',
-      'Request a performance review based on your execution rate and capability score',
-      'Tell me which modules you are struggling with and I will give you a harsh but fair assessment',
+      "Ask me about your skill gaps and learning priorities",
+      "Tell me what technical areas you'd like to improve",
+      "Share your goals and I'll help you create a focused development plan",
     ],
-    risks: ['Time wasting instead of focused learning', 'Off-topic distractions derail your progress'],
+    risks: ["Time wasting instead of focused learning", "Off-topic distractions derail your progress"],
     metrics: {
       capabilityScore: 0,
       executionRate: 0,
@@ -286,34 +283,44 @@ function getOffTopicResponse(): MentorResponse {
 
 /**
  * Parse AI response into structured format
- * Extract sections: ANALYSIS, INSIGHTS, NEXT_STEPS, RISKS
+ * More flexible to handle natural conversational responses
  */
 function parseAIResponse(content: string): MentorResponse {
+  // Try to extract structured sections
   const analysisMatch = content.match(/ANALYSIS[:\s]*([\s\S]*?)(?=INSIGHTS|$)/i)
   const insightsMatch = content.match(/INSIGHTS[:\s]*([\s\S]*?)(?=NEXT_STEPS|$)/i)
   const nextStepsMatch = content.match(/NEXT_STEPS[:\s]*([\s\S]*?)(?=RISKS|$)/i)
   const risksMatch = content.match(/RISKS[:\s]*([\s\S]*?)(?=$)/i)
 
-  const analysis = (analysisMatch?.[1] || '').trim()
-  const rawInsights = (insightsMatch?.[1] || '').trim()
-  const rawNextSteps = (nextStepsMatch?.[1] || '').trim()
-  const rawRisks = (risksMatch?.[1] || '').trim()
+  // If we have structured sections, use them
+  if (analysisMatch) {
+    const analysis = (analysisMatch?.[1] || '').trim()
+    const rawInsights = (insightsMatch?.[1] || '').trim()
+    const rawNextSteps = (nextStepsMatch?.[1] || '').trim()
+    const rawRisks = (risksMatch?.[1] || '').trim()
 
-  // Extract bullet points - 2-3 unique items per section
-  const insights = extractUniqueBulletPoints(rawInsights, 3)
-  const nextSteps = extractUniqueBulletPoints(rawNextSteps, 3)
-  const risks = extractUniqueBulletPoints(rawRisks, 3)
+    const insights = extractUniqueBulletPoints(rawInsights, 3)
+    const nextSteps = extractUniqueBulletPoints(rawNextSteps, 3)
+    const risks = extractUniqueBulletPoints(rawRisks, 3)
 
-  // Remove duplicates across sections
-  const uniqueInsights = removeDuplicates(insights, [...nextSteps, ...risks])
-  const uniqueNextSteps = removeDuplicates(nextSteps, [...insights, ...risks])
-  const uniqueRisks = removeDuplicates(risks, [...insights, ...nextSteps])
+    const uniqueInsights = removeDuplicates(insights, [...nextSteps, ...risks])
+    const uniqueNextSteps = removeDuplicates(nextSteps, [...insights, ...risks])
+    const uniqueRisks = removeDuplicates(risks, [...insights, ...nextSteps])
 
+    return {
+      analysis: analysis || content.substring(0, 200),
+      insights: uniqueInsights.length > 0 ? uniqueInsights : [content.substring(0, 150)],
+      nextSteps: uniqueNextSteps.length > 0 ? uniqueNextSteps : [],
+      risks: uniqueRisks,
+    }
+  }
+
+  // Otherwise, treat the entire response as natural conversation (single analysis)
   return {
-    analysis: analysis || 'Your focus is scattered. Get back to basics.',
-    insights: uniqueInsights.length > 0 ? uniqueInsights : ['Execution rate needs immediate attention'],
-    nextSteps: uniqueNextSteps.length > 0 ? uniqueNextSteps : ['Stop procrastinating. Start now.'],
-    risks: uniqueRisks,
+    analysis: content.trim(),
+    insights: [],
+    nextSteps: [],
+    risks: [],
   }
 }
 
@@ -352,63 +359,80 @@ function removeDuplicates(items: string[], otherItems: string[]): string[] {
 
 /**
  * Fallback response when API fails
- * Still maintains harsh IIT professor tone
+ * Provides professional, well-written guidance
  */
-function getFallbackResponse(context: MentorContext, _userMessage: string): MentorResponse {
+function getFallbackResponse(context: MentorContext, userMessage: string): MentorResponse {
+  // If question is about who/what the mentor is, provide a direct answer
+  if (userMessage.toLowerCase().includes('what are you') || 
+      userMessage.toLowerCase().includes('who are you') ||
+      userMessage.toLowerCase().includes('tell me about yourself')) {
+    return {
+      analysis: "I'm your academic mentor—here to help you develop technical skills, track your learning progress, and provide honest feedback on your performance. I focus on helping you reach your goals through structured guidance and data-driven insights.",
+      insights: [],
+      nextSteps: [],
+      risks: [],
+      metrics: {
+        capabilityScore: Math.round(context.capabilityScore),
+        executionRate: Math.round(context.executionRate),
+        progressCount: context.progressCount,
+        progressTotal: context.progressTotal,
+      },
+    }
+  }
+
+  // For learning-related questions without API, provide solid guidance
   const insights: string[] = []
   const nextSteps: string[] = []
   const risks: string[] = []
 
-  // Brutal insights based on actual data
+  // Professional insights based on actual data
   if (context.executionRate < 50) {
-    insights.push(`${Math.round(context.executionRate)}% execution rate? That's pathetic. You're completing less than half your tasks.`)
+    insights.push(`With an execution rate of ${Math.round(context.executionRate)}%, you're starting tasks but not completing them. The key is to prioritize finishing what you begin before taking on new work.`)
   } else if (context.executionRate < 75) {
-    insights.push(`Execution rate is ${Math.round(context.executionRate)}% - mediocre. You should be at 80%+ minimum.`)
+    insights.push(`Your execution rate of ${Math.round(context.executionRate)}% shows room for improvement. Aim for 80%+ by being more intentional about task prioritization and completion.`)
   } else if (context.executionRate < 90) {
-    insights.push(`${Math.round(context.executionRate)}% execution is acceptable, but not excellent. Push to 95%+.`)
+    insights.push(`Your ${Math.round(context.executionRate)}% execution rate is solid—shows good discipline. Push toward 95%+ to maximize your learning outcomes.`)
   } else {
-    insights.push(`${Math.round(context.executionRate)}% execution rate - now THIS is what I call discipline.`)
+    insights.push(`Your ${Math.round(context.executionRate)}% execution rate demonstrates excellent follow-through and commitment.`)
   }
 
   if (context.weeklyConsistency < 50) {
-    insights.push(`Weekly consistency at ${Math.round(context.weeklyConsistency)}%? You're all over the place. No consistency means no learning.`)
+    insights.push(`Your weekly consistency of ${Math.round(context.weeklyConsistency)}% indicates sporadic effort. Establishing a fixed schedule will dramatically improve your retention and progress.`)
   } else if (context.weeklyConsistency < 75) {
-    insights.push(`${Math.round(context.weeklyConsistency)}% consistency is irregular. Top performers maintain 85%+.`)
+    insights.push(`At ${Math.round(context.weeklyConsistency)}% consistency, you're building habits but need more structure. High performers maintain 85%+ through disciplined routines.`)
   } else {
-    insights.push(`${Math.round(context.weeklyConsistency)}% weekly consistency - good, but don't get complacent.`)
+    insights.push(`Your ${Math.round(context.weeklyConsistency)}% consistency is excellent. This discipline is a major asset in your learning journey.`)
   }
 
   if (context.strongSkills.length > 0 && context.weakSkills.length > 0) {
-    insights.push(
-      `You're strong in ${context.strongSkills[0]} but weak in ${context.weakSkills[0]}. Stop ignoring your weak areas.`
-    )
+    insights.push(`Your strength in ${context.strongSkills[0]} is valuable—leverage it. Meanwhile, dedicate focused time to ${context.weakSkills[0]} to create more balanced capabilities.`)
   }
 
-  // Harsh next steps
+  // Constructive next steps
   if (context.executionRate < 70) {
-    nextSteps.push('Stop starting new tasks. Finish what you started. Your completion rate is terrible.')
+    nextSteps.push('Finish current tasks before starting new ones. Create a tracking system to visualize and close open items.')
   }
   if (context.weeklyConsistency < 70) {
-    nextSteps.push('Set a fixed schedule - 4 hours, 5 days a week minimum. No more sporadic cramming.')
+    nextSteps.push('Set a fixed study schedule—4-5 hours daily, same times each day. Consistency builds compounding results.')
   }
   if (context.weakSkills.length > 0) {
-    nextSteps.push(`Attack ${context.weakSkills[0]} immediately. No more avoidance. Practice for 2 hours daily.`)
+    nextSteps.push(`Dedicate 1.5-2 hours daily to ${context.weakSkills[0]}. Consistent, focused practice yields measurable improvement.`)
   } else {
-    nextSteps.push('You know what to do. Stop making excuses and do it.')
+    nextSteps.push('Continue strengthening your skills while exploring adjacent technical areas.')
   }
 
-  // Identify risks
+  // Risk assessment
   if (context.executionRate < 50) {
-    risks.push('At this rate, you\'ll never progress. Wake up.')
+    risks.push('Low completion rates create knowledge gaps. Shift your focus from breadth to depth.')
   }
   if (context.weeklyConsistency < 40) {
-    risks.push('You\'re not serious about learning. This inconsistency will destroy your career.')
+    risks.push('Inconsistent effort patterns significantly impede learning. Establishing routine is foundational.')
   }
   if (context.capabilityScore < 30) {
-    risks.push('Your capability score is abysmal. Immediate course correction needed.')
+    risks.push('Current capability level requires intensive, structured focus. A personalized development plan would help.')
   }
 
-  const analysis = `Listen carefully: Your capability is at ${Math.round(context.capabilityScore)}%, execution rate is ${Math.round(context.executionRate)}%, and you've completed ${context.progressCount}/${context.progressTotal} modules. Stop accepting mediocrity. This is your wake-up call.`
+  const analysis = `Your capability score is ${Math.round(context.capabilityScore)}%, with ${Math.round(context.executionRate)}% task completion and ${context.progressCount}/${context.progressTotal} modules completed. There are clear opportunities to improve through better execution and consistency.`
 
   return {
     analysis,
