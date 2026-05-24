@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
+const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || 'twinstitute-dev-secret'
+
 export async function GET(req: NextRequest) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+    const token = await getToken({ req, secret: NEXTAUTH_SECRET })
 
     if (!token?.id) {
       return NextResponse.json(null, { status: 200 })

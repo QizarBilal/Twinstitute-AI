@@ -5,6 +5,8 @@ import { generateToken } from '@/lib/auth/token'
 import { verifyCaptcha } from '@/lib/auth/captcha'
 import { validateEmail } from '@/lib/auth/validation'
 
+export const dynamic = 'force-dynamic'
+
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 
 const checkRateLimit = (email: string): boolean => {

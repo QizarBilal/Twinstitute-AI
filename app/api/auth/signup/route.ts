@@ -7,6 +7,8 @@ import { normalizeEmail, validateEmail, validatePassword, sanitizeInput } from '
 import { checkRateLimit } from '@/lib/utils/rate-limit-mongo'
 import { sendOTPEmail } from '@/lib/services/email-production'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

@@ -5,6 +5,8 @@ import { isOTPExpired } from '@/lib/utils/otp'
 import { checkRateLimit, resetRateLimit } from '@/lib/utils/rate-limit-mongo'
 import { sendWelcomeEmail } from '@/lib/services/email-production'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

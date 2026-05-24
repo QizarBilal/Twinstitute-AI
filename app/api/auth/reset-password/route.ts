@@ -5,6 +5,8 @@ import { validatePassword } from '@/lib/utils/validation'
 import { hashToken, isTokenExpired } from '@/lib/utils/token'
 import { sendPasswordChangedEmail } from '@/lib/services/email-production'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
