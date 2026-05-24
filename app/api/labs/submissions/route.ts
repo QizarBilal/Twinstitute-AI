@@ -1,11 +1,19 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAuthSession, unauthorized, serverError, success, badRequest } from '@/lib/api-auth'
 import { prisma } from '@/lib/prisma'
+
+export const dynamic = 'force-dynamic'
 
 // GET /api/labs/submissions - Get user's lab submissions
 export async function GET(req: NextRequest) {
   try {
-    const session = await getAuthSession()
+    let session
+    try {
+      session = await getAuthSession()
+    } catch (authError) {
+      console.error('[labs/submissions] Auth error:', authError)
+      return unauthorized()
+    }
     
     if (!session?.user?.id) {
       return unauthorized()

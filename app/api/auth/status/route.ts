@@ -1,6 +1,8 @@
 import { getAuthenticatedUser } from '@/lib/auth-utils'
 import { success, unauthorized } from '@/lib/api-auth'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * Check user's authentication status and get appropriate redirect URL
  * Returns the URL where user should be redirected after login
