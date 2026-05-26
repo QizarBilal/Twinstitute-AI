@@ -1009,9 +1009,46 @@ export function AlumniTestimonialsSection() {
       image: 'https://images.unsplash.com/photo-1522099124311-d1f47dd3a11a?w=150&h=150&fit=crop',
       feedback: 'The system understands career progression better than any mentor I\'ve had. It predicted exactly what I needed to work on to reach senior engineer level. Invaluable guidance.',
     },
+    {
+      id: 7,
+      name: 'Emily Rodriguez',
+      role: 'Senior Full Stack Engineer at Stripe',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop',
+      feedback: 'The personalized learning path saved me months of wasted effort. I went from mid-level to senior engineer faster than I thought possible, all while maintaining work-life balance.',
+    },
+    {
+      id: 8,
+      name: 'Raj Sharma',
+      role: 'Staff Engineer at Apple',
+      rating: 5,
+      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop',
+      feedback: 'Twinstitute\'s proof system gave me the confidence to negotiate better roles. The tangible evidence of my capabilities was invaluable during interviews and promotions.',
+    },
   ]
 
   const [isHovered, setIsHovered] = useState(false)
+  const [position, setPosition] = useState(0)
+
+  // Smooth continuous scroll animation
+  useEffect(() => {
+    if (isHovered) return
+
+    const interval = setInterval(() => {
+      setPosition((prev) => prev - 1)
+    }, 50)
+
+    return () => clearInterval(interval)
+  }, [isHovered])
+
+  // Calculate card width and gap for positioning
+  const cardWidth = 384 // w-96 = 24rem = 384px
+  const gap = 24 // gap-6 = 1.5rem = 24px
+  const cardWithGap = cardWidth + gap
+  const totalWidth = testimonials.length * cardWithGap
+
+  // Reset position for seamless loop
+  const normalizedPosition = ((position % totalWidth) + totalWidth) % totalWidth
 
   return (
     <section id="alumni" className="relative py-24 bg-black overflow-hidden">
@@ -1046,68 +1083,72 @@ export function AlumniTestimonialsSection() {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <motion.div
-            className="flex gap-6 overflow-hidden"
-            animate={{
-              x: isHovered ? 0 : -100 * (testimonials.length + 1),
-            }}
-            transition={{
-              duration: 50,
-              ease: 'linear',
-              repeat: isHovered ? 0 : Infinity,
-            }}
-          >
-            {/* Render testimonials twice for seamless loop */}
-            {[...testimonials, ...testimonials].map((testimonial, idx) => (
-              <motion.div
-                key={`${testimonial.id}-${idx}`}
-                className="flex-shrink-0 w-full sm:w-96 p-8 rounded-2xl border border-gray-800/60 bg-gradient-to-br from-gray-900/40 to-black backdrop-blur-sm hover:border-cyan-400/40 hover:shadow-lg hover:shadow-cyan-500/20 transition-all group cursor-grab active:cursor-grabbing"
-                whileHover={{ y: -8, borderColor: 'rgba(0, 217, 255, 0.6)' }}
-              >
-                {/* Stars */}
-                <div className="flex gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <motion.span
-                      key={i}
-                      className="text-yellow-400 text-lg"
-                      initial={{ opacity: 0, scale: 0 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.1 }}
-                      viewport={{ once: true }}
-                    >
-                      ★
-                    </motion.span>
-                  ))}
-                </div>
-
-                {/* Feedback Text */}
-                <p className="text-gray-300 text-sm leading-relaxed mb-6 font-light">
-                  {testimonial.feedback}
-                </p>
-
-                {/* Divider */}
-                <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent mb-6" />
-
-                {/* Profile */}
-                <div className="flex items-center gap-4">
-                  <motion.img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full border border-cyan-400/30 object-cover"
-                    whileHover={{ scale: 1.1 }}
-                  />
-                  <div className="flex-1">
-                    <p className="text-white font-bold text-sm bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
-                      {testimonial.name}
-                    </p>
-                    <p className="text-gray-400 text-xs font-light">
-                      {testimonial.role}
-                    </p>
+          <div className="flex gap-6 overflow-hidden">
+            <motion.div
+              className="flex gap-6"
+              animate={{
+                x: -normalizedPosition,
+              }}
+              transition={{
+                duration: 0.5,
+                ease: 'linear',
+              }}
+              style={{
+                width: `${(testimonials.length * cardWithGap * 2)}px`,
+              }}
+            >
+              {/* Render testimonials multiple times for seamless infinite loop */}
+              {[...testimonials, ...testimonials].map((testimonial, idx) => (
+                <motion.div
+                  key={`${testimonial.id}-${idx}`}
+                  className="flex-shrink-0 w-96 p-8 rounded-2xl border border-gray-800/60 bg-gradient-to-br from-gray-900/40 to-black backdrop-blur-sm hover:border-cyan-400/40 hover:shadow-lg hover:shadow-cyan-500/20 transition-all group cursor-grab active:cursor-grabbing"
+                  whileHover={{ y: -8, borderColor: 'rgba(0, 217, 255, 0.6)' }}
+                >
+                  {/* Stars */}
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <motion.span
+                        key={i}
+                        className="text-yellow-400 text-lg"
+                        initial={{ opacity: 0, scale: 0 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.1 }}
+                        viewport={{ once: true }}
+                      >
+                        ★
+                      </motion.span>
+                    ))}
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
+
+                  {/* Feedback Text */}
+                  <p className="text-gray-300 text-sm leading-relaxed mb-6 font-light">
+                    {testimonial.feedback}
+                  </p>
+
+                  {/* Divider */}
+                  <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent mb-6" />
+
+                  {/* Profile */}
+                  <div className="flex items-center gap-4">
+                    <motion.img
+                      src={testimonial.image}
+                      alt={testimonial.name}
+                      className="w-12 h-12 rounded-full border border-cyan-400/30 object-cover"
+                      whileHover={{ scale: 1.1 }}
+                    />
+                    <div className="flex-1">
+                      <p className="text-white font-bold text-sm bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
+                        {testimonial.name}
+                      </p>
+                      <p className="text-gray-400 text-xs font-light">
+                        {testimonial.role}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
 
           {/* Gradient Fade Edges */}
           <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-black to-transparent pointer-events-none z-10" />
