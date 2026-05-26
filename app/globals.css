@@ -1,8 +1,8 @@
-@import './mobile-global.css';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import './mobile-global.css';
 
 @layer base {
   html {
