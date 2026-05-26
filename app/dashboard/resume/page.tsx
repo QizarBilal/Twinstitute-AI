@@ -377,7 +377,7 @@ export default function ResumePage() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="w-[270px] shrink-0 flex flex-col border-r overflow-y-auto"
+          className="hidden lg:flex w-full lg:w-64 xl:w-[270px] shrink-0 flex flex-col border-r overflow-y-auto"
           style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(9,18,40,0.6)', backdropFilter: 'blur(16px)' }}
         >
           {/* Resume Sections */}
@@ -625,7 +625,7 @@ export default function ResumePage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 32 }}
               transition={{ type: 'spring', stiffness: 350, damping: 32 }}
-              className="w-[340px] shrink-0 flex flex-col border-l overflow-y-auto"
+              className="hidden lg:flex w-full lg:w-56 xl:w-[340px] shrink-0 flex flex-col border-l overflow-y-auto"
               style={{
                 borderColor: 'rgba(255,255,255,0.08)',
                 background: 'rgba(9,18,40,0.92)',
@@ -664,7 +664,7 @@ export default function ResumePage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 32 }}
               transition={{ type: 'spring', stiffness: 350, damping: 32 }}
-              className="w-[360px] shrink-0 flex flex-col border-l overflow-y-auto"
+              className="hidden lg:flex w-full lg:w-60 xl:w-[360px] shrink-0 flex flex-col border-l overflow-y-auto"
               style={{
                 borderColor: 'rgba(255,255,255,0.08)',
                 background: 'rgba(9,18,40,0.92)',

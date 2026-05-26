@@ -216,7 +216,7 @@ export default function TwinPage() {
                     </motion.div>
 
                     {/* Strengths & Weaknesses */}
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                         {/* Top Strengths */}
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
@@ -389,7 +389,7 @@ export default function TwinPage() {
                     </div>
 
                     {/* Skill Summary Stats */}
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                         {[
                             { label: 'Total Skills', value: capabilityData.skillsAnalysis.totalSkills, color: 'text-white' },
                             { label: 'Mastered', value: capabilityData.skillsAnalysis.masteredSkills, color: 'text-emerald-400' },
