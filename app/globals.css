@@ -156,20 +156,6 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
-  
-  body {
-    @apply bg-black text-white antialiased;
-    background: #000000;
-    font-feature-settings: "cv11", "ss01";
-    font-variation-settings: "opsz" auto;
-  }
-  
-  /* Performance optimizations */
-  * {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-}
 
 @layer components {
   .dashboard-section {
