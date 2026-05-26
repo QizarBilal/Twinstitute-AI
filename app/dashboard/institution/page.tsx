@@ -141,7 +141,7 @@ export default function InstitutionPage() {
             <AnimatePresence mode="wait">
                 {activeTab === 'overview' && (
                     <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-                        <div className="grid grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 text-center">
                                 <div className="text-3xl font-bold text-white">{placement.totalStudents}</div>
                                 <div className="text-xs text-gray-500 mt-1">Total Students</div>
@@ -255,7 +255,7 @@ export default function InstitutionPage() {
                                 {cohort.analytics.readinessHeatmap.length === 0 ? (
                                     <p className="text-gray-500 text-sm text-center py-8">No student data available</p>
                                 ) : (
-                                    <div className="grid grid-cols-6 gap-2">
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5 sm:gap-2">
                                         {cohort.analytics.readinessHeatmap.map((student, i) => {
                                             const hue = Math.round(student.readiness * 1.2)
                                             return (

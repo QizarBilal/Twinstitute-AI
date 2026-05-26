@@ -1,0 +1,290 @@
+/**
+ * Mobile-First Global Styles
+ * Ensures all pages are properly responsive and don't overflow
+ */
+
+@layer base {
+  /* Prevent horizontal overflow on all viewports */
+  html,
+  body {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Ensure max-width constraint */
+  body {
+    @apply bg-black;
+  }
+
+  /* Mobile-first text sizing */
+  h1 {
+    @apply text-2xl sm:text-3xl lg:text-4xl;
+  }
+
+  h2 {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+
+  h3 {
+    @apply text-lg sm:text-xl;
+  }
+
+  h4 {
+    @apply text-base sm:text-lg;
+  }
+
+  p {
+    @apply text-xs sm:text-sm;
+  }
+
+  /* Ensure images don't overflow */
+  img {
+    @apply max-w-full h-auto;
+  }
+
+  /* Ensure videos don't overflow */
+  video,
+  iframe {
+    @apply max-w-full;
+  }
+
+  /* Fix table overflow */
+  table {
+    @apply w-full overflow-x-auto;
+  }
+
+  /* Prevent input overflow */
+  input,
+  textarea,
+  select {
+    @apply w-full max-w-full;
+  }
+
+  /* Ensure buttons don't overflow */
+  button {
+    @apply whitespace-nowrap;
+  }
+
+  /* Fix flex container overflow */
+  .flex {
+    @apply min-w-0;
+  }
+
+  /* Fix grid container overflow */
+  .grid {
+    @apply min-w-0;
+  }
+
+  /* Ensure modals are mobile-safe */
+  .modal,
+  [role='dialog'] {
+    @apply max-w-[calc(100vw-1rem)] mx-auto;
+  }
+
+  /* Mobile-safe dropdowns */
+  .dropdown-menu {
+    @apply max-w-[calc(100vw-1rem)];
+  }
+
+  /* Ensure focus states work on mobile */
+  *:focus-visible {
+    @apply outline-2 outline-offset-1 outline-blue-600;
+  }
+
+  /* Mobile-safe touch targets */
+  button,
+  a,
+  [role='button'] {
+    @apply min-h-[44px] sm:min-h-[40px] min-w-[44px] sm:min-w-[40px];
+  }
+
+  /* Prevent text selection issues on mobile */
+  body {
+    @apply select-none;
+  }
+
+  input,
+  textarea {
+    @apply select-text;
+  }
+
+  /* Smooth scrolling for better UX */
+  html {
+    @apply scroll-smooth;
+  }
+
+  /* Ensure background images don't break on mobile */
+  [style*='background-image'] {
+    @apply bg-cover bg-center bg-no-repeat;
+  }
+
+  /* Fix overflow in cards */
+  .card,
+  [role='region'] {
+    @apply overflow-hidden;
+  }
+
+  /* Ensure all text truncates properly */
+  .truncate {
+    @apply overflow-hidden text-ellipsis;
+  }
+
+  /* Mobile-safe notifications */
+  .toast,
+  .notification,
+  [role='alert'] {
+    @apply fixed inset-x-0 bottom-0 sm:bottom-auto sm:top-4 sm:right-4;
+    @apply max-w-full sm:max-w-md;
+    @apply rounded-t-2xl sm:rounded-2xl;
+    @apply z-50;
+  }
+}
+
+@layer components {
+  /* Mobile-first container */
+  .container-mobile {
+    @apply px-4 sm:px-6 lg:px-8 mx-auto w-full max-w-7xl;
+  }
+
+  /* Responsive section padding */
+  .section-padding {
+    @apply px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12;
+  }
+
+  /* Mobile-safe card */
+  .card-mobile {
+    @apply p-3 sm:p-4 lg:p-6 rounded-xl border border-gray-800/60;
+    @apply bg-gradient-to-br from-gray-900/40 to-black;
+  }
+
+  /* Mobile-safe button */
+  .btn-mobile {
+    @apply px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm;
+    @apply rounded-lg transition-all;
+    @apply min-h-[40px] flex items-center justify-center;
+  }
+
+  /* Mobile-safe input */
+  .input-mobile {
+    @apply w-full px-3 sm:px-4 py-2 sm:py-2.5;
+    @apply text-xs sm:text-sm;
+    @apply rounded-lg border border-gray-800;
+    @apply bg-gray-900/50 text-white;
+    @apply transition-all;
+    @apply min-h-[40px];
+  }
+
+  /* Mobile-safe heading */
+  .heading-mobile {
+    @apply text-2xl sm:text-3xl lg:text-4xl;
+    @apply font-bold leading-tight;
+  }
+
+  /* Mobile-safe grid 2 columns */
+  .grid-2-mobile {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6;
+  }
+
+  /* Mobile-safe grid 3 columns */
+  .grid-3-mobile {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6;
+  }
+
+  /* Mobile-safe grid 4 columns */
+  .grid-4-mobile {
+    @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4;
+  }
+
+  /* Mobile-safe flex between */
+  .flex-between-mobile {
+    @apply flex flex-col sm:flex-row items-start sm:items-center;
+    @apply justify-between gap-3 sm:gap-4;
+  }
+
+  /* Sidebar responsive helper */
+  .sidebar-mobile {
+    @apply hidden lg:flex w-full lg:w-64 xl:w-72;
+  }
+
+  /* Mobile-safe dropdown */
+  .dropdown-mobile {
+    @apply absolute right-0 sm:right-auto;
+    @apply top-full mt-1;
+    @apply z-50;
+    @apply max-w-[calc(100vw-1rem)] sm:max-w-xs;
+  }
+
+  /* Mobile-safe modal backdrop */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black/50 z-40;
+  }
+
+  /* Mobile-safe modal content */
+  .modal-content {
+    @apply max-h-[90vh] overflow-y-auto;
+    @apply max-w-full sm:max-w-md lg:max-w-lg;
+  }
+}
+
+@layer utilities {
+  /* Truncate 1-3 lines */
+  .truncate-1 {
+    @apply line-clamp-1;
+  }
+
+  .truncate-2 {
+    @apply line-clamp-2;
+  }
+
+  .truncate-3 {
+    @apply line-clamp-3;
+  }
+
+  /* Mobile-safe spacing */
+  .space-mobile {
+    @apply space-y-3 sm:space-y-4 lg:space-y-6;
+  }
+
+  /* Responsive gap */
+  .gap-mobile {
+    @apply gap-3 sm:gap-4 lg:gap-6;
+  }
+
+  /* Prevent overflow */
+  .no-overflow {
+    @apply overflow-hidden;
+  }
+
+  /* Touch-friendly */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Mobile-safe scroll snap */
+  .snap-mobile {
+    @apply snap-x snap-mandatory overflow-x-auto;
+  }
+
+  /* Responsive font scale */
+  .font-scale-mobile {
+    @apply text-xs sm:text-sm md:text-base;
+  }
+
+  /* Mobile-first margin */
+  .mx-mobile {
+    @apply mx-3 sm:mx-4 lg:mx-6;
+  }
+
+  .my-mobile {
+    @apply my-3 sm:my-4 lg:my-6;
+  }
+
+  /* Mobile-first padding */
+  .px-mobile {
+    @apply px-3 sm:px-4 lg:px-6;
+  }
+
+  .py-mobile {
+    @apply py-3 sm:py-4 lg:py-6;
+  }
+}
