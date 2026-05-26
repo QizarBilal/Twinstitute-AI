@@ -163,15 +163,15 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen grid grid-cols-2">
-      <div className="relative bg-gray-950 overflow-hidden flex items-center justify-center p-8">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
+      <div className="hidden lg:relative lg:flex lg:bg-gray-950 overflow-hidden lg:items-center lg:justify-center p-8">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-950 to-gray-900"/>
         
         <div className="relative w-full max-w-lg space-y-5">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-1 h-6 bg-purple-600"/>
-              <h2 className="text-2xl font-bold text-white">Digital Capability Institution</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white">Digital Capability Institution</h2>
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">
               AI-powered capability formation system designed for institutional performance engineering
@@ -260,7 +260,7 @@ export default function SignupPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center bg-black p-8">
+      <div className="flex items-center justify-center bg-black p-4 sm:p-8">
         <div className="relative w-full max-w-md space-y-4">
           <div className="absolute top-0 left-0">
             <Link
@@ -275,10 +275,10 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-1 pt-10">
-            <h1 className="text-lg font-bold text-white">
+            <h1 className="text-lg sm:text-xl font-bold text-white">
               Begin Enrollment
             </h1>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs sm:text-sm text-gray-500">
               Enroll in digital capability institution and formation systems
             </p>
           </div>

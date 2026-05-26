@@ -110,8 +110,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen grid grid-cols-2">
-      <div className="flex items-center justify-center bg-black p-12">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
+      <div className="flex items-center justify-center bg-black p-4 sm:p-8 lg:p-12">
         <div className="absolute top-6 left-6">
           <Link
             href="/"
@@ -235,16 +235,16 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="relative bg-gray-950 overflow-hidden flex items-center justify-center p-12">
+      <div className="hidden lg:flex relative bg-gray-950 overflow-hidden flex items-center justify-center p-12">
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-950"/>
         
         <div className="relative w-full max-w-lg space-y-8">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-1 h-6 bg-blue-600"/>
-              <h2 className="text-xl font-bold text-white">Capability Data Protection</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-white">Capability Data Protection</h2>
             </div>
-            <p className="text-sm text-gray-500 leading-relaxed">
+            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
               Military-grade infrastructure securing institutional performance records and capability models
             </p>
           </div>
@@ -291,17 +291,17 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-black/30 border border-gray-900 p-4 space-y-2">
-              <div className="text-2xl font-bold text-white">SOC 2</div>
-              <div className="text-[9px] uppercase tracking-wider text-gray-600">Type II Certified</div>
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="bg-black/30 border border-gray-900 p-2 sm:p-4 space-y-2">
+              <div className="text-lg sm:text-2xl font-bold text-white">SOC 2</div>
+              <div className="text-[8px] sm:text-[9px] uppercase tracking-wider text-gray-600">Type II Certified</div>
             </div>
-            <div className="bg-black/30 border border-gray-900 p-4 space-y-2">
-              <div className="text-2xl font-bold text-white">ISO 27001</div>
+            <div className="bg-black/30 border border-gray-900 p-2 sm:p-4 space-y-2">
+              <div className="text-lg sm:text-2xl font-bold text-white">ISO 27001</div>
               <div className="text-[9px] uppercase tracking-wider text-gray-600">ISMS Compliant</div>
             </div>
-            <div className="bg-black/30 border border-gray-900 p-4 space-y-2">
-              <div className="text-2xl font-bold text-white">GDPR</div>
+            <div className="bg-black/30 border border-gray-900 p-2 sm:p-4 space-y-2">
+              <div className="text-lg sm:text-2xl font-bold text-white">GDPR</div>
               <div className="text-[9px] uppercase tracking-wider text-gray-600">EU Certified</div>
             </div>
           </div>

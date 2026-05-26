@@ -75,16 +75,16 @@ export default function TranscriptPage() {
     }
 
     return (
-        <div className="px-8 py-8 space-y-6 min-h-screen bg-black">
+        <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 min-h-screen bg-black">
             <div id="transcript-content" className="space-y-6">
             {/* Header */}
             <motion.div 
                 initial={{ opacity: 0, y: -10 }} 
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between"
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
             >
                 <div>
-                    <h1 className="text-3xl font-bold text-white">Formation Record</h1>
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">Formation Record</h1>
                     <p className="text-slate-400 text-sm mt-1">Your complete, verified capability transcript</p>
                 </div>
                 <button 
@@ -101,11 +101,11 @@ export default function TranscriptPage() {
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1 }}
-                className="bg-gradient-to-r from-slate-900/50 via-slate-800/30 to-slate-900/50 border border-slate-700/50 rounded-2xl p-8 backdrop-blur-xl"
+                className="bg-gradient-to-r from-slate-900/50 via-slate-800/30 to-slate-900/50 border border-slate-700/50 rounded-2xl p-4 sm:p-8 backdrop-blur-xl"
             >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
                     <div className="flex-1">
-                        <h2 className="text-4xl font-bold text-white mb-2">{transcript.student.name}</h2>
+                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">{transcript.student.name}</h2>
                         <p className="text-slate-400 text-sm mb-4">{transcript.student.email}</p>
                         <div className="flex items-center gap-3">
                             <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-medium capitalize">
@@ -118,7 +118,7 @@ export default function TranscriptPage() {
                     </div>
                     <div className="text-right">
                         <p className="text-slate-400 text-xs mb-2 uppercase tracking-wide">Overall Score</p>
-                        <div className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 mb-1">
+                        <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 mb-1">
                             {twin?.overallScore || 0}
                         </div>
                         <p className="text-slate-400 text-xs capitalize font-medium">{twin?.stage || 'Foundation'} Stage</p>

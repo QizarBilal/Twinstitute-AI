@@ -140,8 +140,8 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="min-h-screen bg-black grid grid-cols-2">
-      <div className="relative flex items-center justify-center p-12">
+    <div className="min-h-screen bg-black grid grid-cols-1 lg:grid-cols-2">
+      <div className="relative flex items-center justify-center p-4 sm:p-12">
         <div className="w-full max-w-md space-y-6">
           <div className="space-y-2">
             <div className="w-10 h-10 bg-blue-600 flex items-center justify-center mb-3">
@@ -233,7 +233,9 @@ function ResetPasswordContent() {
         </div>
       </div>
 
-      <AuthorityPanel position="right" />
+      <div className="hidden lg:flex">
+        <AuthorityPanel position="right" />
+      </div>
     </div>
   )
 }

@@ -138,7 +138,7 @@ export default function DashboardPage() {
 
   return (
     <motion.div
-      className="px-8 py-8 space-y-8"
+      className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
