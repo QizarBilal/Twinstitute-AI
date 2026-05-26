@@ -66,31 +66,31 @@ export function SolutionSection() {
     <section id="program" className="relative py-24 bg-black overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-0 -right-40 w-96 h-96 bg-blue-600/25 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 -left-40 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl" />
+        <div className="absolute top-0 -right-40 w-40 sm:w-80 md:w-96 h-40 sm:h-80 md:h-96 bg-blue-600/25 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 -left-40 w-40 sm:w-80 md:w-96 h-40 sm:h-80 md:h-96 bg-cyan-600/20 rounded-full blur-3xl" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <motion.div
-          className="mb-20 text-center"
+          className="mb-12 sm:mb-20 text-center"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-6xl lg:text-7xl font-black text-white leading-tight mb-6 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl lg:text-7xl font-black text-white leading-tight mb-4 sm:mb-6 tracking-tight">
             Core System
             <br />
             <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Three Layers of Capability</span>
           </h2>
-          <p className="text-gray-400 text-lg lg:text-xl font-light leading-relaxed max-w-3xl mx-auto mt-6">
+          <p className="text-gray-400 text-sm sm:text-base lg:text-lg lg:text-xl font-light leading-relaxed max-w-3xl mx-auto mt-3 sm:mt-6 px-2 sm:px-0">
             Twinstitute transforms theoretical knowledge into measurable, real-world capability through continuous execution and validation.
           </p>
         </motion.div>
 
         {/* Three Layers - Card Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {layers.map((layer, idx) => {
             const colors = [
               { border: 'from-blue-600 to-cyan-600', bg: 'from-blue-600/5 to-cyan-600/5', accent: 'from-blue-500 to-cyan-400', shadow: 'shadow-blue-500/20' },
@@ -108,7 +108,7 @@ export function SolutionSection() {
                 transition={{ duration: 0.6, delay: idx * 0.15 }}
                 viewport={{ once: true }}
               >
-                <div className={`relative h-full rounded-2xl border border-gray-800/60 bg-gradient-to-br ${color.bg} backdrop-blur-sm p-8 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:border-opacity-100 flex flex-col`}>
+                <div className={`relative h-full rounded-xl sm:rounded-2xl border border-gray-800/60 bg-gradient-to-br ${color.bg} backdrop-blur-sm p-4 sm:p-6 lg:p-8 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:border-opacity-100 flex flex-col`}>
                   {/* Accent glow on hover */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
                     <div className={`absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl ${color.bg} rounded-full blur-3xl`} />
@@ -117,19 +117,19 @@ export function SolutionSection() {
                   {/* Content */}
                   <div className="relative z-10 flex flex-col h-full">
                     {/* Number Badge */}
-                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${color.bg} border border-gray-700/50 mb-6 group-hover:border-opacity-100 transition-all`}>
-                      <span className={`text-xl font-black bg-gradient-to-r ${color.accent} bg-clip-text text-transparent`}>
+                    <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br ${color.bg} border border-gray-700/50 mb-4 sm:mb-6 group-hover:border-opacity-100 transition-all`}>
+                      <span className={`text-lg sm:text-xl font-black bg-gradient-to-r ${color.accent} bg-clip-text text-transparent`}>
                         {idx + 1}
                       </span>
                     </div>
 
                     {/* Title */}
-                    <h3 className="text-3xl font-black text-white mb-3 tracking-tight group-hover:text-cyan-400 transition-colors duration-300">
+                    <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-white mb-2 sm:mb-3 tracking-tight group-hover:text-cyan-400 transition-colors duration-300">
                       {layer.title}
                     </h3>
 
                     {/* Subtitle */}
-                    <p className="text-gray-400 text-sm font-semibold mb-6 group-hover:text-gray-300 transition-colors duration-300">
+                    <p className="text-gray-400 text-xs sm:text-sm font-semibold mb-4 sm:mb-6 group-hover:text-gray-300 transition-colors duration-300">
                       {layer.subtitle}
                     </p>
 
@@ -137,18 +137,18 @@ export function SolutionSection() {
                     <div className={`h-1 w-10 bg-gradient-to-r ${color.accent} rounded-full mb-8 group-hover:w-16 transition-all duration-300`} />
 
                     {/* Points */}
-                    <div className="space-y-4 flex-1">
+                    <div className="space-y-3 sm:space-y-4 flex-1">
                       {layer.points.map((point, pIdx) => (
                         <motion.div
                           key={pIdx}
-                          className="flex gap-3 items-start"
+                          className="flex gap-2 sm:gap-3 items-start"
                           initial={{ opacity: 0, x: -10 }}
                           whileInView={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.5, delay: 0.1 + pIdx * 0.08 }}
                           viewport={{ once: true }}
                         >
-                          <div className={`flex-shrink-0 w-1.5 h-1.5 rounded-full bg-gradient-to-r ${color.accent} mt-2 group-hover:scale-150 transition-transform`} />
-                          <p className="text-gray-350 text-sm leading-relaxed font-light group-hover:text-gray-300 transition-colors">
+                          <div className={`flex-shrink-0 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-gradient-to-r ${color.accent} mt-1.5 sm:mt-2 group-hover:scale-150 transition-transform`} />
+                          <p className="text-gray-350 text-xs sm:text-sm leading-relaxed font-light group-hover:text-gray-300 transition-colors">
                             {point}
                           </p>
                         </motion.div>
@@ -215,49 +215,49 @@ export function HowItWorksSection() {
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl" />
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Title Section */}
         <motion.div
-          className="text-center mb-20"
+          className="text-center mb-12 sm:mb-20"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-6xl lg:text-7xl font-black text-white leading-tight mb-6 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl lg:text-7xl font-black text-white leading-tight mb-4 sm:mb-6 tracking-tight">
             How It Works
             <br />
             <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">The Capability Loop</span>
           </h2>
-          <p className="text-gray-400 text-lg lg:text-xl font-light max-w-2xl mx-auto">
+          <p className="text-gray-400 text-sm sm:text-base lg:text-lg lg:text-xl font-light max-w-2xl mx-auto px-2 sm:px-0">
             Twinstitute operates as a continuous loop: Model → Train → Evaluate → Simulate → Strategize
           </p>
         </motion.div>
 
         {/* Loop visualization */}
         <motion.div
-          className="flex items-center justify-center gap-3 lg:gap-6 mb-20 flex-wrap lg:flex-nowrap"
+          className="flex items-center justify-center gap-2 sm:gap-3 lg:gap-6 mb-12 sm:mb-20 flex-wrap lg:flex-nowrap px-2 sm:px-0"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           viewport={{ once: true }}
         >
           {steps.map((step, idx) => (
-            <div key={idx} className="flex items-center gap-3 lg:gap-6">
+            <div key={idx} className="flex items-center gap-2 sm:gap-3 lg:gap-6">
               <div className="text-center">
-                <div className="text-sm lg:text-base font-black text-blue-400 uppercase tracking-wide">
+                <div className="text-xs sm:text-sm lg:text-base font-black text-blue-400 uppercase tracking-wide">
                   {step.title}
                 </div>
               </div>
               {idx < steps.length - 1 && (
-                <div className="text-2xl text-gray-700 hidden lg:block">→</div>
+                <div className="text-xl sm:text-2xl text-gray-700 hidden lg:block">→</div>
               )}
             </div>
           ))}
         </motion.div>
 
         {/* Steps Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-12 sm:mb-16 px-2 sm:px-0">
           {steps.map((step, idx) => (
             <motion.div
               key={idx}
@@ -272,15 +272,15 @@ export function HowItWorksSection() {
             >
               {/* Card */}
               <motion.div
-                className="relative p-6 rounded-2xl border backdrop-blur-sm h-full"
+                className="relative p-4 sm:p-6 rounded-lg sm:rounded-2xl border backdrop-blur-sm h-full"
                 animate={{
                   borderColor: activeIndex === idx ? 'rgba(59, 130, 246, 0.6)' : 'rgba(107, 114, 128, 0.3)',
                   backgroundColor: activeIndex === idx ? 'rgba(59, 130, 246, 0.08)' : 'rgba(31, 41, 55, 0.4)'
                 }}
               >
                 {/* Number */}
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-600/20 to-cyan-600/20 border border-blue-500/30 mb-4">
-                  <span className={`font-black text-sm ${
+                <div className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-600/20 to-cyan-600/20 border border-blue-500/30 mb-3 sm:mb-4">
+                  <span className={`font-black text-xs sm:text-sm ${
                     activeIndex === idx ? 'text-cyan-400' : 'text-gray-500'
                   }`}>
                     {step.number}
@@ -288,14 +288,14 @@ export function HowItWorksSection() {
                 </div>
 
                 {/* Title */}
-                <h3 className={`text-xl font-bold mb-3 transition-colors ${
+                <h3 className={`text-base sm:text-lg lg:text-xl font-bold mb-2 sm:mb-3 transition-colors ${
                   activeIndex === idx ? 'text-white' : 'text-gray-300'
                 }`}>
                   {step.title}
                 </h3>
 
                 {/* Description */}
-                <p className={`text-sm leading-relaxed transition-colors ${
+                <p className={`text-xs sm:text-sm leading-relaxed transition-colors ${
                   activeIndex === idx ? 'text-gray-300' : 'text-gray-500'
                 }`}>
                   {step.description}
@@ -318,13 +318,13 @@ export function HowItWorksSection() {
 
         {/* Explanation paragraph */}
         <motion.div
-          className="max-w-4xl mx-auto text-center"
+          className="max-w-4xl mx-auto text-center px-4 sm:px-0"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
           viewport={{ once: true }}
         >
-          <p className="text-gray-400 text-lg leading-relaxed font-light">
+          <p className="text-gray-400 text-sm sm:text-base lg:text-lg leading-relaxed font-light">
             This loop repeats continuously —<br />
             <span className="text-white font-semibold">ensuring constant growth, adaptation, and refinement.</span>
           </p>
@@ -393,26 +393,27 @@ export function SystemModulesSection() {
         backgroundSize: '80px 80px'
       }} />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Title Section */}
         <motion.div
-          className="text-center mb-32"
+          className="text-center mb-12 sm:mb-20 lg:mb-32"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-6xl lg:text-7xl font-black text-white leading-tight mb-6 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl lg:text-7xl font-black text-white leading-tight mb-4 sm:mb-6 tracking-tight">
             AI-Powered System
             <br />
             <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Five Core Pillars</span>
           </h2>
-          <p className="text-gray-400 text-lg lg:text-xl font-light leading-relaxed max-w-3xl mx-auto">
+          <p className="text-gray-400 text-sm sm:text-base lg:text-lg lg:text-xl font-light leading-relaxed max-w-3xl mx-auto px-2 sm:px-0">
             A central intelligence coordinating five intelligent subsystems in perfect balance.
           </p>
         </motion.div>
 
-        <div className="relative w-full h-[800px] flex items-center justify-center">
+        {/* Desktop: Orbital layout, Mobile: Grid layout */}
+        <div className="hidden lg:block relative w-full h-[400px] lg:h-[800px] flex items-center justify-center">
           <div className="absolute left-1/2 top-1/2 z-10">
             {angles.map((angle, idx) => (
               <div
@@ -513,6 +514,47 @@ ${idx === activeIndex
           </div>
 
         </div>
+
+        {/* Mobile: Grid layout of pillars */}
+        <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 px-2 sm:px-0">
+          {systemPillars.map((pillar, idx) => (
+            <motion.div
+              key={idx}
+              className="p-4 sm:p-6 rounded-xl border border-cyan-400/40 bg-cyan-500/5 backdrop-blur-md"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
+              viewport={{ once: true }}
+            >
+              <div className="space-y-3">
+                <div className="inline-block">
+                  <span className="text-xs font-mono text-cyan-400/80 bg-cyan-500/10 px-2 py-1 rounded border border-cyan-400/20">
+                    {pillar.number}
+                  </span>
+                </div>
+
+                <h3 className="text-base sm:text-lg font-bold text-white leading-tight">
+                  {pillar.title}
+                </h3>
+
+                <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
+                  {pillar.description}
+                </p>
+
+                <div className="space-y-1.5 pt-2 border-t border-white/10">
+                  {pillar.features.map((feature, fIdx) => (
+                    <div key={fIdx} className="flex items-start gap-2">
+                      <div className="w-0.5 h-0.5 rounded-full bg-cyan-400/60 flex-shrink-0 mt-1.5" />
+                      <span className="text-xs text-gray-400">
+                        {feature}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   )
@@ -538,53 +580,53 @@ export function DifferenceSection() {
   ]
 
   return (
-    <section id="journey" className="relative py-24 bg-black overflow-hidden">
+    <section id="journey" className="relative py-16 sm:py-24 bg-black overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/30 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-0 w-40 sm:w-80 md:w-96 h-40 sm:h-80 md:h-96 bg-blue-600/30 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-40 sm:w-80 md:w-96 h-40 sm:h-80 md:h-96 bg-cyan-600/20 rounded-full blur-3xl" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Title */}
         <motion.div
-          className="text-center mb-20"
+          className="text-center mb-12 sm:mb-20"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-6xl lg:text-7xl font-black text-white leading-tight mb-6 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl lg:text-7xl font-black text-white leading-tight mb-4 sm:mb-6 tracking-tight">
             Traditional Learning
             <br />
             <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">vs Capability Engineering</span>
           </h2>
-          <p className="text-gray-400 text-lg lg:text-xl font-light">See what makes Twinstitute different</p>
+          <p className="text-gray-400 text-sm sm:text-base lg:text-lg">See what makes Twinstitute different</p>
         </motion.div>
 
         {/* Comparison Grid */}
-        <div className="space-y-6 max-w-5xl mx-auto relative">
+        <div className="space-y-3 sm:space-y-6 max-w-5xl mx-auto relative">
           {comparisons.map((item, idx) => (
             <motion.div
               key={idx}
-              className="grid grid-cols-2 gap-6 items-center relative group"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 items-center relative group"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
               {/* Vertical Glow Divider */}
-              <div className="absolute left-1/2 w-[1px] h-full bg-gradient-to-b from-transparent via-cyan-400/40 to-transparent z-0" />
+              <div className="hidden sm:block absolute left-1/2 w-[1px] h-full bg-gradient-to-b from-transparent via-cyan-400/40 to-transparent z-0" />
 
               {/* Left Side: Traditional */}
               <motion.div
                 initial={{ x: -20 }}
                 whileInView={{ x: 0 }}
                 whileHover={{ opacity: 0.5 }}
-                className="p-5 rounded-xl border border-red-500/20 bg-red-500/5 text-gray-400 transition-opacity"
+                className="p-3 sm:p-5 rounded-lg sm:rounded-xl border border-red-500/20 bg-red-500/5 text-gray-400 transition-opacity"
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold">{item.traditional}</span>
+                  <span className="font-semibold text-xs sm:text-sm">{item.traditional}</span>
                 </div>
               </motion.div>
 
@@ -596,10 +638,10 @@ export function DifferenceSection() {
                   scale: 1.03,
                   boxShadow: "0 0 40px rgba(0,217,255,0.4)"
                 }}
-                className="p-5 rounded-xl border border-cyan-400/40 bg-cyan-500/10 text-white transition-all transform origin-left"
+                className="p-3 sm:p-5 rounded-lg sm:rounded-xl border border-cyan-400/40 bg-cyan-500/10 text-white transition-all transform origin-left"
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-lg">{item.twinstitute}</span>
+                  <span className="font-bold text-sm sm:text-lg">{item.twinstitute}</span>
                 </div>
               </motion.div>
             </motion.div>
@@ -648,14 +690,14 @@ export function OutcomeSection() {
   }, [proofFlows.length])
 
   return (
-    <section id="proof" className="relative py-24 bg-black overflow-hidden">
+    <section id="proof" className="relative py-16 sm:py-24 bg-black overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/30 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-0 w-40 sm:w-80 md:w-96 h-40 sm:h-80 md:h-96 bg-blue-600/30 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-40 sm:w-80 md:w-96 h-40 sm:h-80 md:h-96 bg-cyan-600/20 rounded-full blur-3xl" />
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Title Section */}
         <motion.div
           className="text-center mb-32"
